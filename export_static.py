@@ -75,7 +75,11 @@ def summarize_for_static(rec: dict, max_history: int = 60) -> dict:
     }
 
 
-def build(out_dir: str = "docs", verbose: bool = True) -> dict:
+EMBED_LAST_RUNS = 25     # sayfaya gömülecek en yeni koşu sayısı (eskiler runs/ içinde kalır)
+
+
+def build(out_dir: str = "docs", verbose: bool = True,
+          embed_last: int = EMBED_LAST_RUNS) -> dict:
     out = out_dir if os.path.isabs(out_dir) else os.path.join(ROOT, out_dir)
     os.makedirs(os.path.join(out, "runs"), exist_ok=True)
     os.makedirs(os.path.join(out, "reports"), exist_ok=True)
@@ -84,13 +88,15 @@ def build(out_dir: str = "docs", verbose: bool = True) -> dict:
     idx = load_index()
     details = {}
     copied_runs, copied_reps = 0, 0
+    embed_ids = {e.get("run_id") for e in idx[-embed_last:]} if embed_last else {e.get("run_id") for e in idx}
     for entry in idx:
         rid = entry.get("run_id")
         if not rid:
             continue
         rec = load_run(rid)
         if rec:
-            details[rid] = summarize_for_static(rec)
+            if rid in embed_ids or len(details) < embed_last:
+                details[rid] = summarize_for_static(rec)
             shutil.copyfile(os.path.join(RUNS, f"{rid}.json"),
                             os.path.join(out, "runs", f"{rid}.json"))
             copied_runs += 1

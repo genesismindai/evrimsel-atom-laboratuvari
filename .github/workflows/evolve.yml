@@ -10,7 +10,8 @@ name: Keşif koşusu + kalıcı yayın (GitHub Pages)
 
 on:
   schedule:
-    - cron: "17 */6 * * *"      # her 6 saatte bir (UTC)
+    - cron: "17 */6 * * *"      # her 6 saatte bir: hızlı koşu (site taze kalır)
+    - cron: "43 2 * * *"        # gece 02:43: standart (daha derin arama)
   workflow_dispatch:            # elle tetikleme
     inputs:
       preset:
@@ -57,11 +58,21 @@ jobs:
         env:
           EA_AUTO_EXPORT: "1"     # her koşudan sonra docs/ (statik yayın) tazelenir
         run: |
-          PRESET="${{ github.event.inputs.preset || 'hizli' }}"
-          ATOMS="${{ github.event.inputs.atoms || '1e8' }}"
+          # elle tetikleme > gece cron'u (standart) > varsayılan (hizli)
+          if [ -n "${{ github.event.inputs.preset }}" ]; then
+            PRESET="${{ github.event.inputs.preset }}"
+          elif [ "${{ github.event.schedule }}" = "43 2 * * *" ]; then
+            PRESET="standart"
+          else
+            PRESET="hizli"
+          fi
+          ATOMS="${{ github.event.inputs.atoms || '2e8' }}"
+          echo "ön ayar: $PRESET · atom: $ATOMS"
           # Her koşuda farklı tohum: run_number ile deterministik ama çeşitlenen arama
           SEED=$(( 1000 + ${{ github.run_number }} ))
           python runner_cli.py --preset "$PRESET" --seed "$SEED" --atoms "$ATOMS"
+          echo "preset=$PRESET seed=$SEED" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Koşu: $PRESET / seed $SEED" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Statik yayını üret (docs/)
         run: python export_static.py --out docs
@@ -79,8 +90,10 @@ jobs:
             git push
           fi
 
-      - name: Pages yapılandır
+      - name: Pages yapılandır (gerekirse otomatik etkinleştir)
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Artefakt yükle
         uses: actions/upload-pages-artifact@v3

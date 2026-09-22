@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evrimsel Atom Fiziği Laboratuvarı — kalıcı yayın</title>
+<style>
+  :root{--bg:#080b10;--panel:#0e141c;--line:#1d2836;--text:#e6edf3;--dim:#8b98a5;
+        --green:#3fb950;--blue:#58a6ff;--amber:#d29922;--red:#f85149;--purple:#bc8cff;--cyan:#39d0d8}
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#0f1a26 0%,var(--bg) 60%);
+       color:var(--text);font:14px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+  header{padding:20px 26px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#0d141d,transparent)}
+  h1{margin:0 0 6px;font-size:21px}h1 span{color:var(--green)}
+  .sub{color:var(--dim);font-size:12.5px;max-width:1150px}
+  .wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:18px 26px 60px}
+  .full{grid-column:1/-1}
+  .card{background:linear-gradient(180deg,var(--panel),#0b1016);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow:hidden}
+  .card h2{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--cyan);font-weight:600}
+  .card h3{margin:14px 0 6px;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+  table{border-collapse:collapse;width:100%;font-size:12.5px}
+  th,td{border-bottom:1px solid var(--line);padding:5px 7px;text-align:left;vertical-align:top}
+  th{color:var(--dim);font-weight:500;text-transform:uppercase;font-size:10.5px;letter-spacing:.08em}
+  .fx{background:#0a1017;border:1px solid #1b2635;border-radius:6px;padding:9px 11px;color:#ffd580;font-size:13.5px;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+  .chip{display:inline-block;padding:2px 7px;border-radius:5px;font-size:11px;margin:2px 3px 2px 0;border:1px solid}
+  .ok{color:#7ee787;border-color:#1f6f3a;background:#0d2417}.no{color:#ffb3ae;border-color:#7a2226;background:#2c1113}
+  .num{font-variant-numeric:tabular-nums}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .stat{background:#0b1119;border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+  .stat b{display:block;font-size:17px;color:#fff;font-variant-numeric:tabular-nums}
+  .stat span{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em}
+  .small{font-size:11.5px;color:var(--dim)}
+  .honest{border-left:3px solid var(--green);padding-left:10px;color:#bfe3c6;font-size:12px}
+  .warn{border-left:3px solid var(--amber);padding-left:10px;color:#e3d3a4;font-size:12px}
+  .badge{padding:3px 9px;border-radius:99px;font-size:11.5px;border:1px solid;color:#79c0ff;border-color:#1f4f7a;background:#0d2136}
+  canvas{width:100%;height:220px;background:#070b10;border:1px solid var(--line);border-radius:8px}
+  select,input{background:#0f1621;border:1px solid #26374b;color:var(--text);border-radius:6px;padding:6px 9px;font:inherit}
+  footer{padding:16px 26px 40px;color:var(--dim);font-size:12px;border-top:1px solid var(--line)}
+  .bench{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#0c121a;margin-bottom:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Evrimsel Atom Fiziği Laboratuvarı <span>— kalıcı yayın</span></h1>
+  <div class="sub">
+    Bu sayfa <b>statiktir ve kalıcıdır</b> (ücretsiz barındırma): sunucu düşse de, oturum kapansa da
+    erişilebilir kalır. Evrimsel algoritmayı çalıştıran Python kodu bulutta <b>zamanlanmış iş (GitHub
+    Actions)</b> olarak koşar, sonuçlar depoya işlenir ve bu sayfa her koşuda yeniden üretilir.
+    Her koşunun tam kaydı arşivde saklanır. <a href="methods.html">Yöntem ve dürüstlük kuralları →</a>
+  </div>
+</header>
+<div class="wrap">
+  <div class="card full">
+    <h2>Koşu seç <span class="small">(<span id="runCount"></span> koşu arşivde · kalıcı git geçmişi)</span></h2>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <select id="runSel" style="min-width:420px"></select>
+      <span class="badge" id="runBadge">—</span>
+      <span class="small" id="runMeta">—</span>
+    </div>
+  </div>
+
+  <div class="card full">
+    <h2>Bağımsız veri doğrulaması (kapalı formdan DEĞİL, sayısal çözücüden)</h2>
+    <div class="grid4" id="selfTest"></div>
+    <div class="small" id="selfTestDetail" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card full">
+    <h2>Keşif sonuçları — benchmark'lar</h2>
+    <div id="bench"></div>
+  </div>
+
+  <div class="card full">
+    <h2>Trilyon ölçeği muhasebesi (ölçülen hız → doğrusal projeksiyon)</h2>
+    <div id="throughput"></div>
+  </div>
+
+  <div class="card">
+    <h2>Evrim geçmişi (seçili koşu, ilk benchmark)</h2>
+    <canvas id="chart" width="900" height="220"></canvas>
+    <div class="small" style="margin-top:6px"><span style="color:#3fb950">▬ doğrulama hatası (log₁₀)</span>
+      · <span style="color:#58a6ff">▬ maliyet birimi</span> · <span style="color:#d29922">▬ ölçüm gürültü tabanı</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Arşiv (tüm koşular)</h2>
+    <div style="max-height:320px;overflow:auto">
+      <table id="archive"><tr><th>koşu</th><th>ön ayar/tohum</th><th>süre</th><th>kayıtlar</th></tr></table>
+    </div>
+  </div>
+</div>
+<footer>
+  Kalıcılık: statik site + git arşivi. Bilimsel dürüstlük: referans veri sonlu farklar Schrödinger çözücüsünden;
+  numerolojik uydurmalar etiket-karıştırma bariyeri, Hellmann–Feynman ve virial/eylem filtreleriyle elenir;
+  sınav kümesi yalnızca rapor aşamasında ölçülür.
+</footer>
+<script>
+window.__DATA__ = /*__DATA__*/ {"runs":[],"details":{}};
+const D = window.__DATA__;
+const $ = s => document.querySelector(s);
+const fmt = (x,d=3) => { if(x===null||x===undefined||isNaN(x)) return "—";
+  if(typeof x!=="number") return String(x);
+  if(Math.abs(x)>=1e4||(Math.abs(x)<1e-3&&x!==0)) return x.toExponential(d); return (+x).toFixed(d); };
+const fmtInt = x => (x===null||x===undefined)? "—" : Number(x).toLocaleString("tr-TR");
+
+function init(){
+  $("#runCount").textContent = D.runs.length;
+  const sel = $("#runSel"); sel.innerHTML = "";
+  D.runs.slice().reverse().forEach(r=>{
+    const o = document.createElement("option"); o.value = r.run_id;
+    o.textContent = `${r.run_id}  (${r.preset}, tohum ${r.seed})`;
+    sel.appendChild(o);
+  });
+  sel.onchange = () => render(sel.value);
+  const arch = $("#archive");
+  D.runs.slice().reverse().forEach(r=>{
+    const tr = document.createElement("tr");
+    const champs = Object.entries(r.champions||{}).map(([k,v])=>`${k}: <code>${v||"—"}</code>`).join("<br>");
+    tr.innerHTML = `<td><code>${r.run_id}</code></td><td>${r.preset} / ${r.seed}</td>
+      <td class="num">${fmt(r.wall_seconds_total,1)} s</td>
+      <td><a href="runs/${r.run_id}.json">json</a> · <a href="reports/${r.run_id}.md">md</a> ·
+          <a href="reports/${r.run_id}.html">html</a></td>`;
+    arch.appendChild(tr);
+    // şampiyon özetini arşiv tablosunun altına iliştir
+    const tr2 = document.createElement("tr");
+    tr2.innerHTML = `<td colspan="4" class="small">${champs}</td>`;
+    arch.appendChild(tr2);
+  });
+  if(D.runs.length) render(D.runs[D.runs.length-1].run_id);
+  else { $("#bench").innerHTML = '<div class="small">henüz koşu yok</div>'; }
+}
+
+function render(runId){
+  const det = D.details[runId] || {};
+  const meta = D.runs.find(r=>r.run_id===runId) || {};
+  $("#runBadge").textContent = det.live ? "canlı yayın kaydı" : "kalıcı arşiv kaydı";
+  $("#runMeta").textContent = `başlangıç ${det.started||"—"} · bitiş ${det.finished||"—"} · süre ${fmt(det.wall_seconds_total,1)} s · yapılandırma pop=${(det.config||{}).pop_size} nesil=${(det.config||{}).generations} ada=${(det.config||{}).islands}`;
+  renderSelfTest(det.self_test||{});
+  renderBenches(det.benchmarks||{});
+  renderThroughput(det.throughput);
+  drawChart(det);
+}
+
+function renderSelfTest(st){
+  const m = st.meta||{};
+  $("#selfTest").innerHTML = `
+    <div class="stat"><b>${fmt(st.action_residual,2)}</b><span>|eylem artığı| 2⟨T⟩+⟨V⟩ → 0</span></div>
+    <div class="stat"><b>${fmt(st.virial_ratio,5)}</b><span>virial −⟨V⟩/⟨T⟩ → 2</span></div>
+    <div class="stat"><b>${fmt(st.grid_delta,2)}</b><span>ızgara yakınsaması (h,h/2)</span></div>
+    <div class="stat"><b>${fmt(m["max rel|eylem artığı|"],2)}</b><span>referans göreli artık (tüm Z,n)</span></div>`;
+  $("#selfTestDetail").innerHTML = `
+    referans sha256 <code>${(m.checksum_sha256||"—").slice(0,32)}…</code> ·
+    ölçek yasası |E(2Z)/E(Z)−4| = ${fmt(m["max|E(2Z)/E(Z)-4|"],2)} ·
+    l-dejenerasyon hatası ${fmt(m["max|l-dejenerasyon hatası|"],2)} ·
+    Richardson E₁ = ${fmt((m.richardson||{}).E_extrap,8)} Hartree (tam −0.5)`;
+}
+
+function filterChips(c){
+  if(!c||!c.filters) return "";
+  return c.filters.map(f=>`<span class="chip ${f.passed?'ok':'no'}" title="${(f.detail||'').replace(/"/g,'')}">${f.id} ${f.passed?'✓':'✗'}</span>`).join("");
+}
+
+function renderBenches(benches){
+  const host = $("#bench"); host.innerHTML = "";
+  Object.entries(benches).forEach(([key,res])=>{
+    const c = res.champion||{};
+    const d = document.createElement("div"); d.className="bench";
+    let html = `
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline">
+        <b>${res.bench_title||key}</b>
+        <span class="small">değişkenler: <code>${(res.var_names||[]).join(", ")}</code> ·
+          nesil ${fmtInt(res.generations_run)} · değerlendirme ${fmtInt(res.evaluations)} ·
+          numeroloji bariyeri ${fmt(res.null_barrier)}</span>
+      </div>
+      <div class="fx" style="margin:8px 0">${c.formula||"—"}</div>
+      <div class="grid4">
+        <div class="stat"><b>${c.cost??"—"}</b><span>işlem birimi (maliyet)</span></div>
+        <div class="stat"><b>${fmt(c.loss_train)}</b><span>eğitim hatası</span></div>
+        <div class="stat"><b>${fmt(c.loss_val)}</b><span>doğrulama hatası</span></div>
+        <div class="stat"><b>${fmt(c.loss_test)}</b><span>sınav (eğitim dışı rejim)</span></div>
+      </div>
+      <div style="margin-top:8px">${filterChips(c)}</div>
+      <div class="small" style="margin-top:6px">python: <code>${c.python||"—"}</code> · doğrulandı: <b>${c.verified}</b></div>`;
+    if(res.known_limits && res.known_limits.limit){
+      const kl = res.known_limits;
+      html += `<h3>bilinen analitik limit karşılaştırması <span class="small">(teşhis — seçimde kullanılmadı)</span></h3>
+        <div class="small">${kl.limit}</div>`;
+      if(kl.max_rel_deviation!==undefined)
+        html += `<div class="small">en büyük bağıl sapma <b>${fmt(kl.max_rel_deviation)}</b> · ortalama ${fmt(kl.mean_rel_deviation)}</div>`;
+      if(kl.perturbation_table){
+        html += `<table style="margin-top:6px"><tr><th>terim</th><th>bağımsız çözücü</th><th>keşfedilen formül</th><th>bağıl fark</th></tr>` +
+          kl.perturbation_table.map(t=>`<tr><td>${t.term}</td><td class="num">${(+t.solver).toFixed(8)}</td>
+            <td class="num">${(+t.formula).toFixed(8)}</td><td class="num">${fmt(t.rel_diff)}</td></tr>`).join("") + `</table>`;
+      }
+    }
+    const hall = (res.hall_of_fame||[]).slice(0,5);
+    if(hall.length){
+      html += `<h3>onur listesi</h3><table><tr><th>formül</th><th>maliyet</th><th>train</th><th>val</th><th>sınav</th><th>doğrulandı</th></tr>` +
+        hall.map(h=>`<tr><td><code>${h.formula}</code></td><td class="num">${h.cost}</td>
+          <td class="num">${fmt(h.loss_train)}</td><td class="num">${fmt(h.loss_val)}</td>
+          <td class="num">${fmt(h.loss_test)}</td><td>${h.verified?"✅":"—"}</td></tr>`).join("") + `</table>`;
+    }
+    if(res.seeds_used && res.seeds_used.length){
+      html += `<h3>şeffaflık: kullanılan ön-bilgi şablonları (cevap değil, boş kalıp)</h3>
+        <div class="small"><code>${res.seeds_used.join("</code> · <code>")}</code></div>`;
+    }
+    d.innerHTML = html; host.appendChild(d);
+  });
+}
+
+function renderThroughput(t){
+  const host = $("#throughput");
+  if(!t){ host.innerHTML = '<div class="small">bu koşuda ölçeklendirme kaydı yok</div>'; return; }
+  const r = t.run;
+  host.innerHTML = `
+    <div class="fx">${t.formula}   ·   maliyet ${t.formula_cost} işlem/atom   ·   doğrulanmış: ${t.formula_verified?"evet":"hayır"}</div>
+    <div class="grid4" style="margin:10px 0">
+      <div class="stat"><b>${fmtInt(r.atoms_realized)}</b><span>gerçek koşu (atom)</span></div>
+      <div class="stat"><b>${fmt(r.ns_per_atom,2)}</b><span>ns/atom (ölçüldü)</span></div>
+      <div class="stat"><b>${fmt(r.peak_rss_mb,0)} MB</b><span>tepe bellek (O(öbek))</span></div>
+      <div class="stat"><b>${fmtInt(r.nonfinite_values)}</b><span>NaN/inf (donanım güvenliği)</span></div>
+    </div>
+    <div class="small">topluluk ortalaması: E = ${fmt(r.mean_E,6)} ± ${fmt(r.std_E,3)} Hartree · formül süresi ${fmt(r.formula_ns_per_atom,2)} ns + örnekleme ${fmt(r.sampling_ns_per_atom,2)} ns</div>
+    <table style="margin-top:10px"><tr><th>atom</th><th>tahmini süre (1 çekirdek)</th><th>işlem</th><th>tahmini enerji</th></tr>
+    ${(t.projections||[]).map(p=>`<tr><td class="num">${p.atoms.toExponential(0)}</td><td>${p.estimated_human}</td>
+      <td class="num">${p.fp64_flops.toExponential(2)}</td><td class="num">${p.estimated_joules.toExponential(2)} J</td></tr>`).join("")}</table>
+    <div class="grid3" style="margin-top:10px">
+      <div class="stat"><b>${t.speedup_vs_solver_ops_per_atom.toExponential(2)}×</b><span>işlem başına hızlanma (pahalı çözücüye göre)</span></div>
+      <div class="stat"><b>${t.speedup_vs_solver_seconds.toExponential(2)}×</b><span>süre hızlanması</span></div>
+      <div class="stat"><b>${(t.spec||{}).weight_model||"—"} (β=${(t.spec||{}).beta})</b><span>topluluk modeli Z∈[${(t.spec||{}).z_min},${(t.spec||{}).z_max}]</span></div>
+    </div>
+    <div class="warn" style="margin-top:10px">${t.assumptions.note}</div>`;
+}
+
+function drawChart(det){
+  const cv = $("#chart"); if(!cv) return;
+  const ctx = cv.getContext("2d"); const w=cv.width,h=cv.height; ctx.clearRect(0,0,w,h);
+  const benches = det.benchmarks||{}; const first = Object.values(benches)[0]; if(!first){
+    ctx.fillStyle="#8b98a5"; ctx.fillText("veri yok", w/2-20, h/2); return; }
+  const hist = (first.history||[]).filter(x=>x.best_val_loss!=null||x.best_train_loss!=null);
+  ctx.strokeStyle="#1d2836"; ctx.beginPath(); ctx.moveTo(38,8); ctx.lineTo(38,h-22); ctx.lineTo(w-6,h-22); ctx.stroke();
+  ctx.fillStyle="#8b98a5"; ctx.font="10px ui-monospace";
+  ctx.fillText("nesil", w-40, h-8); ctx.fillText("log₁₀(hata)", 2, 14);
+  if(!hist.length) return;
+  const gmax = Math.max(...hist.map(x=>x.gen||0), 1);
+  const logs = hist.map(x => (x.best_val_loss!=null && isFinite(x.best_val_loss))? Math.log10(x.best_val_loss)
+    : ((x.best_train_loss!=null && isFinite(x.best_train_loss))? Math.log10(x.best_train_loss) : null));
+  const vals = logs.filter(v=>v!==null);
+  const lmin = Math.min(...vals), lmax = Math.max(-1, ...vals);
+  const X = g => 38 + (w-48)*g/gmax;
+  const Y = v => (h-22) - (h-34)*(v-lmin)/Math.max(lmax-lmin,0.5);
+  for(let k=Math.ceil(lmin);k<=Math.floor(lmax);k++){
+    ctx.strokeStyle="#121a24"; ctx.beginPath(); ctx.moveTo(38,Y(k)); ctx.lineTo(w-6,Y(k)); ctx.stroke();
+    ctx.fillStyle="#5b6b7c"; ctx.fillText("1e"+k, 10, Y(k)+3);
+  }
+  ctx.strokeStyle="#3fb950"; ctx.lineWidth=1.8; ctx.beginPath(); let started=false;
+  hist.forEach((x,i)=>{ if(logs[i]===null) return; const px=X(x.gen||0),py=Y(logs[i]);
+    if(!started){ctx.moveTo(px,py);started=true;} else ctx.lineTo(px,py); });
+  ctx.stroke();
+  const costs = hist.map(x=>x.cost).filter(v=>v!=null);
+  if(costs.length){
+    const cmax = Math.max(...costs,1);
+    ctx.strokeStyle="#58a6ff"; ctx.lineWidth=1.2; ctx.beginPath(); let s2=false;
+    hist.forEach(x=>{ if(x.cost==null) return; const px=X(x.gen||0),py=(h-22)-(h-34)*0.9*(x.cost/cmax);
+      if(!s2){ctx.moveTo(px,py);s2=true;} else ctx.lineTo(px,py); });
+    ctx.stroke();
+  }
+  const key = Object.keys(benches)[0];
+  const floor = {"enerji":2e-4,"ters_yaricap":5e-4,"yukawa":1e-3}[key];
+  if(floor){ const y=Y(Math.log10(floor)); ctx.strokeStyle="#d29922"; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(38,y); ctx.lineTo(w-6,y); ctx.stroke(); ctx.setLineDash([]); }
+}
+init();
+</script>
+</body>
+</html>

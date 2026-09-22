@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yayın kaydı — kalıcı arşiv</title>
+<style>
+  body{margin:0;background:#080b10;color:#e6edf3;font:14px/1.6 ui-monospace,Menlo,Consolas,monospace}
+  .wrap{max-width:1100px;margin:0 auto;padding:26px 22px 70px}
+  h1{font-size:20px;color:#7ee787;margin:0 0 6px}
+  h2{font-size:14px;color:#39d0d8;margin:24px 0 8px;text-transform:uppercase;letter-spacing:.1em}
+  p{color:#c9d1d9} code{background:#131b25;padding:1px 5px;border-radius:4px;color:#ffa657}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px}
+  td,th{border:1px solid #1d2836;padding:6px 9px;text-align:left;vertical-align:top} th{background:#131b25;color:#79c0ff}
+  a{color:#58a6ff;text-decoration:none} a:hover{text-decoration:underline}
+  .link{background:#0a1017;border:1px solid #1b2635;border-radius:8px;padding:10px 12px;color:#ffd580;word-break:break-all}
+  .ok{border-left:3px solid #3fb950;padding-left:12px;color:#bfe3c6;margin-top:10px}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Yayın kaydı — geçici bağlantı, kalıcı kanıt</h1>
+<p>Sunucu her açılışta çalışma adresini (geçici/oturumluk bağlantı) bu kayda işler. Bağlantı oturuma bağlı
+olarak değişebilir; ancak <b>tüm bilimsel içerik diskte kalıcıdır</b>: her koşu JSON + rapor dosyası olarak
+saklanır, bu sayfa onları listeler ve indirilebilir kılar.</p>
+<div class="link" id="permalink">adres yükleniyor…</div>
+<div class="ok" id="recordNote">Yayın anı: — · Kalıcılık: dosya sistemi (data/, reports/) · Doğrulama: sha256 özetleri koşu kayıtlarında.</div>
+
+<h2>Koşu arşivi (kalıcı)</h2>
+<table id="idx"><tr><th>koşu kimliği</th><th>ön ayar / tohum</th><th>başlangıç</th><th>süre</th><th>şampiyon formüller</th><th>kayıt</th></tr></table>
+
+<h2>Yayınlanan artefaktlar</h2>
+<table>
+<tr><th>içerik</th><th>yol</th><th>açıklama</th></tr>
+<tr><td>canlı panel</td><td><a href="/">/</a></td><td>evrim durumu, filtre sonuçları, ölçeklendirme</td></tr>
+<tr><td>yöntem</td><td><a href="/methods">/methods</a></td><td>filtre zinciri, uygunluk fonksiyonu, dürüstlük kuralları</td></tr>
+<tr><td>koşu kayıtları</td><td><a href="/api/index">/api/index</a></td><td>dizin (JSON)</td></tr>
+<tr><td>tam sonuç</td><td><code>/api/run/&lt;id&gt;</code></td><td>tohum, yapılandırma, formüller, filtreler, ölçümler</td></tr>
+<tr><td>rapor</td><td><code>/reports/&lt;id&gt;.md</code> · <code>.html</code></td><td>insan-okur rapor (Markdown + bağımsız HTML)</td></tr>
+<tr><td>referans veri</td><td><a href="/api/reference_meta">/api/reference_meta</a></td><td>çözücü doğrulama ölçütleri + sha256</td></tr>
+</table>
+<p style="margin-top:16px"><a href="/">← canlı panele dön</a> · <a href="/methods">yöntem →</a></p>
+</div>
+<script>
+async function main(){
+  const perm = location.origin;
+  document.getElementById("permalink").textContent = perm;
+  const now = new Date();
+  document.getElementById("recordNote").textContent =
+    "Yayın anı: " + now.toLocaleString("tr-TR") + " · Adres: " + perm +
+    " · Kalıcılık: dosya sistemi (data/, reports/) · Bağlantı oturumluk olabilir, kanıtlar kalıcıdır.";
+  try{
+    const idx = await (await fetch("/api/index")).json();
+    const t = document.getElementById("idx");
+    if(!idx.length){ t.innerHTML += `<tr><td colspan="6">henüz koşu yok — panodan koşu başlatın</td></tr>`; return; }
+    idx.slice().reverse().forEach(r=>{
+      const tr = document.createElement("tr");
+      const ch = Object.entries(r.champions||{}).map(([k,v])=>`${k}: <code>${v??"—"}</code>`).join("<br>");
+      tr.innerHTML = `<td><code>${r.run_id}</code></td><td>${r.preset} / ${r.seed}</td>
+        <td>${r.started||"—"}</td><td>${r.wall_seconds_total??"—"} s</td><td>${ch||"—"}</td>
+        <td><a href="/api/run/${r.run_id}">json</a> · <a href="/reports/${r.run_id}.md">md</a> ·
+            <a href="/reports/${r.run_id}.html">html</a></td>`;
+      t.appendChild(tr);
+    });
+  }catch(e){}
+}
+main();
+</script>
+</body></html>

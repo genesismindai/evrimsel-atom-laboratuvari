@@ -1,0 +1,29 @@
+# Render Blueprint — ücretsiz katman web servisi (7/24 canlı panel)
+#
+# Kullanım: Render panosunda "New → Blueprint" seçip bu depoyu bağlayın.
+# Ücretsiz katman notu: hareketsizlikte uyur, ilk istekte ~40-60 s'de uyanır.
+# Uyanık kalması için ücretsiz bir ping servisi (örn. cron-job.org) ile
+# /healthz adresini 10 dakikada bir çağırtın.
+services:
+  - type: web
+    name: evrimsel-atom-laboratuvari
+    runtime: python
+    plan: free
+    buildCommand: "pip install numpy scipy"
+    startCommand: "python web/server.py"
+    healthCheckPath: /healthz
+    envVars:
+      - key: AUTO_START
+        value: "1"          # sunucu açılır açılmaz keşif koşusu başlar
+      - key: AUTO_FOREVER
+        value: "1"          # koşular aralıksız sürer (kesintisiz keşif)
+      - key: AUTO_PRESET
+        value: "hizli"
+      - key: AUTO_ATOMS
+        value: "2e8"
+      - key: AUTO_INTERVAL
+        value: "20"
+      - key: EA_AUTO_EXPORT
+        value: "1"          # her koşudan sonra docs/ statik yayını tazelenir
+      - key: PYTHON_VERSION
+        value: "3.12.6"

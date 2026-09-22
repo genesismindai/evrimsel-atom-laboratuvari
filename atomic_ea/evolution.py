@@ -1,0 +1,736 @@
+"""
+evolution.py — Filtre entegreli, ada-modeli evrimsel sembolik regresyon motoru.
+
+Tasarım kararları
+-----------------
+* Arama uzayı: yalnızca whitelist operatörler (güvenli + ucuz katman).
+* Uygunluk:  log10(eğitim hatası) + maliyet cezası
+  -> "aynı hatayı daha ucuz veren formül kazanır" ilkesi matematikselleşir.
+* Kaskad değerlendirme: ucuz filtreler popülasyonun tamamına,
+  pahalı fizik filtreleri (Hellmann-Feynman, virial, gürbüzlük) yalnızca
+  seçkinlere/arşive uygulanır. Bu, kare-hata maliyetini ~50x düşürür.
+* Sayısal sabit ayarı: her bireyde Gauss-Newton (Levenberg benzeri) ile
+  sabitler yeniden ayarlanır -> "n^a" tipi yasalar, tek bir tamsayı üs
+  mutasyonuna bağlı kalmadan keşfedilebilir.
+* Ada modeli + göç: 3 ada, 12 nesilde bir en iyiler göç eder (çeşitlilik).
+* Arşiv: Pareto cephesi (hata, maliyet) — en ucuz-doğru formüller saklanır.
+* Dürüstlük: hiçbir referans veri kapalı formdan gelmez; sınav kümesi
+  yalnızca rapor aşamasında bir kez kullanılır.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, asdict, field
+import copy
+import itertools
+import math
+import time
+from typing import Callable, Dict, List, Optional, Tuple
+import numpy as np
+
+from . import expression as ex
+from . import filters as fl
+
+
+# ------------------------------------------------------------------ yapılandırma
+@dataclass
+class EAConfig:
+    pop_size: int = 300
+    generations: int = 90
+    islands: int = 3
+    migration_every: int = 12
+    tournament: int = 5
+    crossover_rate: float = 0.75
+    elite_frac: float = 0.06
+    max_depth: int = 5
+    max_nodes: int = 22
+    init_max_depth: int = 3
+    cost_weight: float = 0.06
+    lm_steps: int = 5
+    simplify: bool = True
+    seed: int = 0
+    time_budget_us: float = 400.0
+    null_factor: float = 5.0
+    strict_interval: int = 4
+    patience: int = 45
+    physics_seeded: bool = True
+    blind_mode: bool = False
+
+
+# ------------------------------------------------------------------ başlangıç ağaçları
+def _c(v: float) -> ex.Tree:
+    return ("c", float(v))
+
+
+def _x(i: int) -> ex.Tree:
+    return ("x", int(i))
+
+
+def _f(op: str, *a: ex.Tree) -> ex.Tree:
+    return ("f", op) + tuple(a)
+
+
+def physics_seeds(var_names: List[str]) -> List[ex.Tree]:
+    """
+    ŞEFFAF ön bilgi arketipleri (rapora aynen yazılır).
+
+    Bunlar "cevap" değildir; güç yasası oranı / polinom gibi genel yapısal
+    kalıplardır ve yalnızca sabitleri ayarlanacak boş şablonlardır. Keşfin
+    geçerliliği bu şablondan değil, bağımsız filtrelerden gelir.
+    """
+    n = len(var_names)
+    seeds: List[ex.Tree] = []
+    if n == 2:
+        x0, x1 = _x(0), _x(1)
+        seeds += [
+            _f("mul", _c(-1.0), _f("div", _f("sq", x0), _f("sq", x1))),          # A·x0²/x1²
+            _f("div", _f("sq", x0), _f("mul", _f("sq", x1), _c(2.0))),
+            _f("mul", _c(-1.0), _f("div", x0, _f("sq", x1))),                     # A·x0/x1²
+            _f("div", x0, _f("mul", _f("sq", x1), _c(2.0))),
+            _f("sub", _c(1.0), _f("mul", _c(1.0), _f("div", x0, _f("sq", x1)))),  # 1 - A·x0/x1²
+            _f("add", _f("div", _f("neg", _f("sq", x0)), _c(2.0)),
+                 _f("mul", _c(1.0), x0)),                                          # -x0²/2 + A·x0
+            _f("mul", _c(-0.5), _f("div", _f("sq", x0), _f("add", _f("sq", x1), _c(0.0)))),
+            _f("div", _f("sq", x0), _f("mul", _f("sq", x1), _f("add", _c(1.0), _c(0.0)))),
+        ]
+    if n == 3:  # (r, l, Z)
+        r, l, Z = _x(0), _x(1), _x(2)
+        seeds += [
+            _f("add", _f("div", _f("neg", Z), r),
+                 _f("div", _f("mul", l, _f("add", l, _c(1.0))), _f("mul", _c(2.0), _f("sq", r)))),
+            _f("add", _f("mul", _c(-1.0), _f("div", Z, r)),
+                 _f("div", _f("sq", l), _f("mul", _c(2.0), _f("sq", r)))),
+            _f("div", _f("neg", Z), r),     # yalnız Coulomb (l=0 alt durumu)
+            _f("add", _f("div", _f("neg", Z), r), _f("div", l, _f("sq", r))),
+        ]
+    if n == 2 and var_names and var_names[1] in ("α", "a", "alpha"):
+        Z, A = _x(0), _x(1)
+        seeds += [
+            _f("add", _f("div", _f("neg", _f("sq", Z)), _c(2.0)), _f("mul", _c(1.0), _f("mul", Z, A))),
+            _f("add", _f("add", _f("div", _f("neg", _f("sq", Z)), _c(2.0)), _f("mul", _c(1.0), _f("mul", Z, A))),
+                 _f("mul", _c(-1.0), _f("sq", A))),
+            _f("mul", _c(-0.5), _f("add", _f("sq", Z), _f("mul", _c(2.0), _f("mul", Z, A)))),
+        ]
+    # yinelenenleri at
+    uniq, seen = [], set()
+    for s in seeds:
+        k = repr(s)
+        if k not in seen:
+            seen.add(k)
+            uniq.append(s)
+    return uniq
+
+
+def random_tree(nvars: int, cfg: EAConfig, rng: np.random.Generator,
+                max_depth: Optional[int] = None, cheap: bool = True) -> ex.Tree:
+    """Ramped half-and-half: dengeli büyüme karışımı."""
+    max_depth = max_depth or cfg.init_max_depth
+    unary = ex.CHEAP_UNARY if cheap else ex.UNARY_SAFE
+    binary = ex.CHEAP_BINARY if cheap else ex.BINARY_SAFE
+    include_const_root = rng.random() < 0.35
+
+    def build(depth: int) -> ex.Tree:
+        leaf_p = 0.35 if depth > 1 else 0.0
+        if depth >= max_depth or rng.random() < leaf_p:
+            if rng.random() < 0.35:
+                return _c(float(np.round(rng.normal(0, 2.0), 3)))
+            return _x(int(rng.integers(nvars)))
+        r = rng.random()
+        if r < 0.45:
+            a, b = build(depth + 1), build(depth + 1)
+            if b[0] == "x" and rng.random() < 0.4:
+                b = copy.deepcopy(a)      # kareleme olasılığını artır
+            return _f(str(rng.choice(binary)), a, b)
+        if r < 0.9:
+            return _f(str(rng.choice(unary)), build(depth + 1))
+        return build(depth + 1)
+
+    t = build(1)
+    if include_const_root:
+        t = _f("mul", _c(float(np.round(rng.normal(-0.5, 1.5), 3))), t)
+    return t
+
+
+# ------------------------------------------------------------------ mutasyon / çaprazlama
+def _nodes(t: ex.Tree) -> List[Tuple[Tuple, ...]]:
+    """Tüm alt ağaçları (yol ile) listeler. Yol: (child_index, ...)"""
+    out: List[Tuple[Tuple, ...]] = []
+    def rec(node: ex.Tree, path: Tuple[int, ...]):
+        out.append((path, node))
+        if node[0] == "f":
+            for i, ch in enumerate(node[2:]):
+                rec(ch, path + (i,))
+    rec(t, ())
+    return out
+
+
+def get_subtree(t: ex.Tree, path: Tuple[int, ...]) -> ex.Tree:
+    node = t
+    for i in path:
+        node = node[2 + i]
+    return node
+
+
+def set_subtree(t: ex.Tree, path: Tuple[int, ...], sub: ex.Tree) -> ex.Tree:
+    if not path:
+        return sub
+    i = path[0]
+    children = list(t[2:])
+    children[i] = set_subtree(children[i], path[1:], sub)
+    return ("f", t[1]) + tuple(children)
+
+
+def mutate(t: ex.Tree, nvars: int, cfg: EAConfig, rng: np.random.Generator,
+           cheap: bool, max_depth: int) -> ex.Tree:
+    nodes = _nodes(t)
+    paths = [p for p, _ in nodes]
+    ops = [n[1] for _, n in nodes if n[0] == "f"]
+
+    which = rng.random()
+    if which < 0.30 and paths:          # nokta mutasyonu (operatör değişimi)
+        path = paths[int(rng.integers(len(paths)))]
+        sub = get_subtree(t, path)
+        if sub[0] == "f" and rng.random() < 0.5:
+            pool = ex.CHEAP_UNARY if sub[1] == "neg" else ex.CHEAP_BINARY
+            pool = ex.CHEAP_BINARY if len(sub) > 3 else ex.CHEAP_UNARY
+            # arite korunmalı
+            newop = str(rng.choice(ex.CHEAP_BINARY if len(sub) > 3 else ex.CHEAP_UNARY))
+            t2 = ("f", newop) + tuple(sub[2:])
+            return set_subtree(t, path, t2)
+        if sub[0] == "c":
+            return set_subtree(t, path, _c(float(np.round(sub[1] + rng.normal(0, 1.0), 3))))
+        if sub[0] == "x":
+            return set_subtree(t, path, _x(int(rng.integers(nvars))))
+        return t
+    if which < 0.55 and paths:          # alt-ağaç değişimi
+        path = paths[int(rng.integers(len(paths)))]
+        return set_subtree(t, path, random_tree(nvars, cfg, rng, max_depth=min(2, max_depth), cheap=cheap))
+    if which < 0.70 and ops:            # sarma (unary kök)
+        path = paths[int(rng.integers(len(paths)))]
+        op = str(rng.choice(ex.CHEAP_UNARY if cheap else ex.UNARY_SAFE))
+        return set_subtree(t, path, _f(op, get_subtree(t, path)))
+    if which < 0.85 and paths:          # budama (düğümü çocuğuyla değiştir)
+        cand = [p for p in paths if get_subtree(t, p)[0] == "f"]
+        if cand:
+            path = cand[int(rng.integers(len(cand)))]
+            sub = get_subtree(t, path)
+            return set_subtree(t, path, sub[2 + int(rng.integers(len(sub) - 2))])
+        return t
+    # sabit pertürbasyonu
+    return set_subtree(t, paths[0], _f("mul", _c(float(np.round(rng.normal(1.0, 0.4), 3))), t))
+
+
+def crossover(a: ex.Tree, b: ex.Tree, nvars: int, rng: np.random.Generator) -> ex.Tree:
+    pa, _ = _nodes(a)[int(rng.integers(len(_nodes(a))))]
+    pb, _ = _nodes(b)[int(rng.integers(len(_nodes(b))))]
+    return set_subtree(a, pa, get_subtree(b, pb))
+
+
+# ------------------------------------------------------------------ basitleştirme
+def simplify(t: ex.Tree, probe: List[np.ndarray]) -> ex.Tree:
+    """
+    Cebirsel sadeleştirme + sabit katlama + sıfır/birim eleme.
+    Ucuzluk hedefinin doğrudan uygulayıcısı: "aynı fonksiyonu daha az işlemle".
+    """
+    finite_probe = None
+
+    def probe_ok(node: ex.Tree) -> bool:
+        y = ex.evaluate(node, probe)
+        return bool(np.all(np.isfinite(y)))
+
+    def val_ok(node: ex.Tree) -> bool:
+        y = ex.evaluate(node, probe)
+        return bool(np.all(np.isfinite(y)))
+
+    def rec(node: ex.Tree) -> ex.Tree:
+        if node[0] in ("x", "c"):
+            return node
+        op = node[1]
+        kids = [rec(k) for k in node[2:]]
+
+        # sabit katlama
+        if kids and all(k[0] == "c" for k in kids):
+            try:
+                tmp = ("f", op) + tuple(kids)
+                y = ex.evaluate(tmp, [np.array([1.0])])
+                if np.all(np.isfinite(y)):
+                    v = float(np.ravel(y)[0])
+                    if abs(v) <= 1e4:
+                        return _c(0.0 if abs(v) < 1e-12 else v)
+            except Exception:
+                pass
+
+        if len(kids) == 1:
+            a = kids[0]
+            if op == "neg" and a[0] == "f" and a[1] == "neg":
+                return a[2]
+            if op in ("sq", "pow2") and a[0] == "f" and a[1] in ("sq", "pow2"):
+                return _f("pow4", a[2]) if False else _f("sq", _f("sq", a[2]))
+            if op == "abs" and a[0] == "f" and a[1] == "abs":
+                return a
+            if op == "sqrt" and a[0] == "f" and a[1] in ("sq", "pow2"):
+                return _f("abs", a[2])
+            if op == "log" and a[0] == "f" and a[1] == "exp":
+                return a[2]
+            return _f(op, a)
+
+        a, b = kids[0], kids[1]
+        if op == "add":
+            if b[0] == "c" and b[1] == 0.0:
+                return a
+            if a[0] == "c" and a[1] == 0.0:
+                return b
+        if op == "sub":
+            if b[0] == "c" and b[1] == 0.0:
+                return a
+            if repr(a) == repr(b) and probe_ok(a):
+                return _c(0.0)
+        if op == "mul":
+            if (b[0] == "c" and b[1] == 0.0) or (a[0] == "c" and a[1] == 0.0):
+                if probe_ok(a) and probe_ok(b):
+                    return _c(0.0)
+            if b[0] == "c" and b[1] == 1.0:
+                return a
+            if a[0] == "c" and a[1] == 1.0:
+                return b
+            if a[0] == "c" and b[0] == "f" and b[1] == "mul":
+                if b[2][0] == "c":
+                    return _f("mul", _c(a[1] * b[2][1]), b[3])      # c1·(c2·x) -> (c1c2)·x
+                if b[3][0] == "c":
+                    return _f("mul", _c(a[1] * b[3][1]), b[2])      # c1·(x·c2) -> (c1c2)·x
+            if a[0] == "c" and b[0] == "f" and b[1] == "div" and b[3][0] == "c" and b[3][1] != 0:
+                return _f("mul", _c(a[1] / b[3][1]), b[2])          # c1·(x/c2) -> (c1/c2)·x
+            if a[0] == "c" and b[0] == "c":
+                return _c(a[1] * b[1])
+            if a[0] == "f" and a[1] == "mul" and a[3][0] == "c" and b[0] == "c":
+                return _f("mul", _c(a[3][1] * b[1]), a[2])          # (x·c1)·c2
+            if b[0] == "f" and b[1] == "neg":
+                if a[0] == "f" and a[1] == "neg":
+                    return _f("mul", a[2], b[2])                     # (−a)(−b) -> ab
+                return _f("neg", _f("mul", a, b[2]))
+            if a[0] == "f" and a[1] == "neg":
+                return _f("neg", _f("mul", a[2], b))
+            if repr(a) == repr(b) and probe_ok(a):
+                return _f("sq", a)
+            if a[0] == "c" and b[0] == "c":
+                return _c(a[1] * b[1])
+        if op == "div":
+            if a[0] == "f" and a[1] == "mul" and a[3][0] == "c" and b[0] == "c" and b[1] != 0:
+                return _f("mul", _c(a[3][1] / b[1]), a[2])          # (x·c1)/c2 -> (c1/c2)·x
+            if a[0] == "f" and a[1] == "mul" and a[2][0] == "c" and b[0] == "c" and b[1] != 0:
+                return _f("mul", _c(a[2][1] / b[1]), a[3])          # (c1·x)/c2
+            if a[0] == "c" and b[0] == "f" and b[1] == "mul" and b[2][0] == "c" and b[2][1] != 0:
+                return _f("div", _c(a[1] / b[2][1]), b[3])          # c1/(c2·x) -> (c1/c2)/x
+            if a[0] == "c" and b[0] == "f" and b[1] == "div" and b[2][0] == "c" and b[2][1] != 0:
+                return _f("mul", _c(a[1] / b[2][1]), b[3])          # c1/(c2/x) -> (c1/c2)·x
+            if a[0] == "f" and a[1] == "neg":
+                return _f("neg", _f("div", a[2], b))
+            if b[0] == "f" and b[1] == "neg":
+                return _f("neg", _f("div", a, b[2]))
+            if b[0] == "c" and b[1] == 1.0:
+                return a
+            if repr(a) == repr(b) and probe_ok(a):
+                y = ex.evaluate(a, probe)
+                if np.all(np.abs(y) > 1e-9):
+                    return _c(1.0)
+            if b[0] == "c" and b[1] != 0.0:
+                return _f("mul", _c(1.0 / b[1]), a) if abs(1.0 / b[1]) <= 1e4 else _f("div", a, b)
+        return _f(op, a, b)
+
+    out = rec(t)
+    # kareleme yerine sq kullanımı zaten var; maliyet yeniden hesabı
+    return out
+
+
+# ------------------------------------------------------------------ MDL sabit yuvarlama
+# Basitlik sırasına göre aday sabitler (0 en basit, sonra ±1, ±1/2, ±2, …).
+# Küme GENELdir (cevaba özel değil); kabul ölçütü verinin hassasiyet tabanıdır.
+SNAP_CANDIDATES = [0.0, 1.0, -1.0, 0.5, -0.5, 2.0, -2.0, 0.25, -0.25, 3.0, -3.0,
+                   1.5, -1.5, 4.0, -4.0, 1.0 / 3.0, -1.0 / 3.0, 1.0 / 6.0, -1.0 / 6.0,
+                   2.0 / 3.0, -2.0 / 3.0, 6.0, -6.0, 8.0, -8.0, 12.0, -12.0]
+
+
+def snap_constants(t: ex.Tree, X, y, noise_rel: float, passes: int = 12) -> ex.Tree:
+    """
+    Ölçüm-belirsizliği temelli sabit yuvarlama (Minimum Description Length).
+
+    Kural: bir sabiti daha basit bir değere yuvarlamak, eğitim hatasını
+    verinin hassasiyet tabanının (noise_rel) belirgin biçimde üstüne
+    çıkarmıyorsa, sadeleştirmeyi kabul et. Böylece sayısal referansın
+    çözünürlüğünün altında kalan "uydurma basamaklar" (numeroloji) elenir;
+    formül, verinin gerçekten taşıdığı bilgiye indirgenir.
+    """
+    def loss(tt):
+        return fl.rel_rmse(ex.evaluate(tt, X), y)
+
+    cur = t
+    cur_loss = loss(cur)
+    simple_rank = {v: i for i, v in enumerate(SNAP_CANDIDATES)}
+
+    for _ in range(passes):
+        vals = ex.consts(cur)
+        if not vals:
+            break
+        thr = max(noise_rel, cur_loss * 1.6)
+
+        # --- (1) ORTAK (koordineli) yuvarlama: tüm sabitler birden
+        # Tek tek yuvarlama, iki sabitin çarpımından oluşan katsayıyı
+        # (ör. 0.995/(−1.99) ≈ −0.5) hedefine ulaştıramaz: ara adım vadide
+        # kalır. MDL ölçütü: "veriye uygunluk kısıtı altında en kısa tanım".
+        if 2 <= len(vals) <= 5:
+            order = []
+            for cv in vals:
+                ranked = sorted(range(len(SNAP_CANDIDATES)),
+                                key=lambda k: (abs(SNAP_CANDIDATES[k] - cv), k))
+                order.append([SNAP_CANDIDATES[k] for k in ranked[:4]])
+            combos = sorted(itertools.product(*order),
+                            key=lambda cb: sum(simple_rank.get(v, 99) for v in cb))
+            best = None
+            for combo in combos[:160]:      # en basit atamalar önce denenir
+                if sum(simple_rank.get(v, 99) for v in combo) >= 40:
+                    break
+                l = loss(ex.set_consts(cur, combo))
+                if np.isfinite(l) and l <= thr:
+                    best = combo
+                    break
+            if best is not None:
+                cur = ex.set_consts(cur, best)
+                cur_loss = loss(cur)
+                improved_any = True
+                continue
+
+        # --- (2) tek sabit yuvarlama (yedek yol)
+        improved = False
+        for i in np.argsort(-np.abs(vals)):
+            for v in SNAP_CANDIDATES:
+                vals_i = ex.consts(cur)
+                if abs(v - vals_i[int(i)]) < 1e-12:
+                    continue
+                trial = ex.set_consts(cur, [v if j == int(i) else vals_i[j]
+                                            for j in range(len(vals_i))])
+                l = loss(trial)
+                if l <= max(noise_rel, cur_loss * 1.6):
+                    cur, cur_loss = trial, l
+                    improved = True
+                    break
+            if improved:
+                break
+        if not improved:
+            break
+    return cur
+
+
+# ------------------------------------------------------------------ sabit ayarı (Gauss-Newton)
+def tune_constants(t: ex.Tree, X: List[np.ndarray], y: np.ndarray,
+                   steps: int = 5, lam: float = 1e-3) -> ex.Tree:
+    """Sabitleri eğitim verisine göre Gauss-Newton ile ayarlar (LM benzeri)."""
+    cs = ex.consts(t)
+    if not cs:
+        return t
+    c = np.array(cs, dtype=float)
+    if c.size > 6:
+        return t
+    best = copy.deepcopy(t)
+    best_sse = float(np.sum((ex.evaluate(t, X) - y) ** 2))
+
+    for _ in range(steps):
+        p = c + 1e-6
+        J = np.zeros((len(y), c.size))
+        for i in range(c.size):
+            h = 1e-5 * max(1.0, abs(c[i]))
+            cp = c.copy(); cp[i] += h
+            cm = c.copy(); cm[i] -= h
+            yp = ex.evaluate(ex.set_consts(t, cp), X)
+            ym = ex.evaluate(ex.set_consts(t, cm), X)
+            if not (np.all(np.isfinite(yp)) and np.all(np.isfinite(ym))):
+                return best
+            J[:, i] = (yp - ym) / (2 * h)
+        r = ex.evaluate(ex.set_consts(t, c), X) - y
+        if not np.all(np.isfinite(r)):
+            return best
+        try:
+            A = J.T @ J + lam * np.eye(c.size)
+            delta = np.linalg.solve(A, -J.T @ r)
+        except np.linalg.LinAlgError:
+            return best
+        # adım sınırı ve değer sınırı
+        delta = np.clip(delta, -5.0, 5.0)
+        cand = np.clip(c + delta, -1e6, 1e6)
+        yc = ex.evaluate(ex.set_consts(t, cand), X)
+        if not np.all(np.isfinite(yc)):
+            lam *= 10
+            continue
+        sse = float(np.sum((yc - y) ** 2))
+        if sse < best_sse:
+            best_sse = sse
+            best = ex.set_consts(t, cand)
+            c = cand
+        else:
+            lam *= 10
+        if best_sse < 1e-30:
+            break
+    return best
+
+
+# ------------------------------------------------------------------ popülasyon
+class Individual:
+    __slots__ = ("tree", "ev", "score", "gen")
+
+    def __init__(self, tree: ex.Tree, gen: int = 0):
+        self.tree = tree
+        self.gen = gen
+        self.ev: Optional[fl.Evaluation] = None
+        self.score = math.inf
+
+
+def _score_ind(ind: Individual, bench, cfg: EAConfig) -> float:
+    ev = ind.ev
+    if ev is None or not ev.ok:
+        return math.inf
+    penalty = cfg.cost_weight * (ev.cost / max(bench.cost_budget, 1e-9))
+    return math.log10(max(ev.loss_train, 1e-16)) + float(penalty)
+
+
+def _mk_ind(tree: ex.Tree, bench, cfg: EAConfig, gen: int, do_lm: bool = True) -> Individual:
+    if do_lm and ex.n_consts(tree) > 0:
+        tree = tune_constants(tree, bench.train.X, bench.train.y, steps=cfg.lm_steps)
+        tree = snap_constants(tree, bench.train.X, bench.train.y,
+                              float(getattr(bench, "noise_rel", 1e-6)))
+    if cfg.simplify:
+        tree = simplify(tree, bench.probe_X)
+        tree = snap_constants(tree, bench.train.X, bench.train.y,
+                              float(getattr(bench, "noise_rel", 1e-6)))
+    ind = Individual(tree, gen)
+    ind.ev = fl.quick_eval(tree, bench, tier=bench.tier)
+    ind.score = _score_ind(ind, bench, cfg)
+    return ind
+
+
+# ------------------------------------------------------------------ ana döngü
+def run(bench, cfg: Optional[EAConfig] = None,
+        progress: Optional[Callable[[dict], None]] = None,
+        should_stop: Optional[Callable[[], bool]] = None) -> dict:
+    cfg = cfg or EAConfig()
+    rng = np.random.default_rng(cfg.seed)
+    t_start = time.time()
+    nvars = len(bench.var_names)
+
+    seeds: List[ex.Tree] = []
+    if cfg.physics_seeded and not cfg.blind_mode:
+        seeds = physics_seeds(bench.var_names)
+
+    islands: List[List[Individual]] = []
+    for isl in range(cfg.islands):
+        pop: List[Individual] = []
+        for i in range(cfg.pop_size // cfg.islands):
+            if i < len(seeds) and isl == 0:
+                t = seeds[i]
+            else:
+                t = random_tree(nvars, cfg, rng)
+            pop.append(_mk_ind(t, bench, cfg, 0))
+        islands.append(pop)
+
+    def top_of(pop: List[Individual]) -> Individual:
+        return min(pop, key=lambda z: z.score)
+
+    archive: Dict[str, dict] = {}
+    history: List[dict] = []
+    best_ever: Optional[fl.Evaluation] = None
+    best_ever_score = math.inf
+    stall = 0
+
+    def consider_archive(ind: Individual, gen: int, strict: bool = False) -> None:
+        nonlocal best_ever, best_ever_score
+        if not np.isfinite(ind.score):
+            return
+        if strict:
+            ind.ev = fl.full_eval(ind.ev, bench, tier=bench.tier,
+                                  time_budget_us=cfg.time_budget_us,
+                                  null_factor=cfg.null_factor)
+        key = f"{round(ind.ev.cost,1)}|{round(math.log10(max(ind.ev.loss_train,1e-16)),4)}"
+        rec = {
+            "gen": gen, "tree": ind.tree, "score": ind.score,
+            "cost": ind.ev.cost, "nodes": ind.ev.nodes, "depth": ind.ev.depth,
+            "loss_train": ind.ev.loss_train, "loss_val": ind.ev.loss_val,
+            "verified": ind.ev.verified, "strict": strict,
+            "pretty": ex.to_pretty(ind.tree, bench.var_names),
+            "python": ex.to_python(ind.tree, bench.var_names),
+        }
+        old = archive.get(key)
+        if old is None or (not old["strict"] and strict):
+            archive[key] = rec
+        if ind.score < best_ever_score:
+            best_ever_score = ind.score
+            best_ever = ind.ev
+
+    for gen in range(1, cfg.generations + 1):
+        if should_stop and should_stop():
+            history.append({"gen": gen, "stopped": True})
+            break
+
+        strict = (gen % cfg.strict_interval == 0) or gen == 1
+        for isl in islands:
+            isl.sort(key=lambda z: z.score)
+            consider_archive(isl[0], gen, strict=strict)
+            if strict:
+                consider_archive(isl[min(2, len(isl) - 1)], gen, strict=False)
+
+        # --- istatistik
+        flat = [ind for isl in islands for ind in isl]
+        best = min(flat, key=lambda z: z.score)
+        if best_ever is None or best.score < best_ever_score - 1e-6:
+            stall = 0
+        else:
+            stall += 1
+        hist = {
+            "gen": gen, "gen_": gen * (cfg.pop_size),
+            "best_score": best.score if np.isfinite(best.score) else None,
+            "best_train_loss": best.ev.loss_train if best.ev else None,
+            "best_val_loss": best.ev.loss_val if best.ev else None,
+            "cost": best.ev.cost if best.ev else None,
+            "nodes": best.ev.nodes if best.ev else None,
+            "formula": ex.to_pretty(best.tree, bench.var_names) if best.ev else None,
+            "archive": len(archive),
+        }
+        history.append(hist)
+        if progress and (gen % 2 == 0 or gen == 1):
+            progress({"type": "gen", **hist, "elapsed": round(time.time() - t_start, 1)})
+
+        if stall >= cfg.patience:
+            if progress:
+                progress({"type": "log", "msg": f"yakınsama: {cfg.patience} nesil iyileşme yok, durduruldu"})
+            break
+
+        # --- göç
+        if gen % cfg.migration_every == 0 and len(islands) > 1:
+            migrants = [top_of(isl) for isl in islands]
+            for i, isl in enumerate(islands):
+                donor = migrants[(i + 1) % len(islands)]
+                isl[-1] = _mk_ind(copy.deepcopy(donor.tree), bench, cfg, gen)
+
+        # --- yeni nesil
+        n_elite = max(2, int(cfg.pop_size // cfg.islands * cfg.elite_frac))
+        for isl in islands:
+            isl.sort(key=lambda z: z.score)
+            new_pop: List[Individual] = [Individual(i.tree, gen) or i for i in isl[:n_elite]]
+            for i in range(n_elite):
+                new_pop[i].ev = isl[i].ev
+                new_pop[i].score = isl[i].score
+            while len(new_pop) < len(isl):
+                def tourn() -> Individual:
+                    k = rng.integers(len(isl), size=cfg.tournament)
+                    cands = [isl[int(j)] for j in k]
+                    return min(cands, key=lambda z: z.score)
+                p1 = tourn()
+                if rng.random() < cfg.crossover_rate:
+                    p2 = tourn()
+                    child = crossover(p1.tree, p2.tree, nvars, rng)
+                else:
+                    child = copy.deepcopy(p1.tree)
+                for _ in range(int(rng.integers(1, 3))):
+                    child = mutate(child, nvars, cfg, rng, cheap=(bench.tier == "cheap"),
+                                   max_depth=cfg.max_depth)
+                if ex.n_nodes(child) > cfg.max_nodes or ex.depth(child) > cfg.max_depth + 1:
+                    child = copy.deepcopy(p1.tree)
+                    child = mutate(child, nvars, cfg, rng, cheap=(bench.tier == "cheap"),
+                                   max_depth=cfg.max_depth)
+                new_pop.append(_mk_ind(child, bench, cfg, gen))
+            isl[:] = new_pop
+
+    # --- kapanış: arşivi ve seçkinleri tam denetimden geçir
+    candidates: List[ex.Tree] = [rec["tree"] for rec in archive.values()]
+    for isl in islands:
+        isl.sort(key=lambda z: z.score)
+        candidates.extend([ind.tree for ind in isl[:3]])
+    seen, unique = set(), []
+    for t in candidates:
+        if repr(t) not in seen:
+            seen.add(repr(t))
+            unique.append(t)
+
+    hall: List[dict] = []
+    seen_forms: set = set()
+    for t in unique[:60]:
+        ind = _mk_ind(t, bench, cfg, gen=cfg.generations, do_lm=False)
+        form = ex.to_pretty(ind.tree, bench.var_names)
+        if form in seen_forms:
+            continue
+        seen_forms.add(form)
+        if not np.isfinite(ind.score):
+            continue
+        ev = fl.full_eval(ind.ev, bench, tier=bench.tier, time_budget_us=cfg.time_budget_us,
+                          null_factor=cfg.null_factor)
+        # sınav kümesi: YALNIZCA burada, bir kez ölçülür
+        y_test = ex.evaluate(t, bench.test.X)
+        ev.loss_test = fl.rel_rmse(y_test, bench.test.y)
+        ev.notes["max_rel_err_test"] = fl.rel_maxerr(y_test, bench.test.y)
+        rec = serialize_eval(ev, bench)
+        rec["score_key"] = fl.score(ev, bench, cfg.cost_weight)
+        hall.append(rec)
+    hall.sort(key=lambda r: (not r["verified"], r["score_key"], r["cost"], r["loss_val"]))
+
+    champ = hall[0] if hall else None
+    return {
+        "bench_key": bench.key,
+        "bench_title": bench.title,
+        "var_names": bench.var_names,
+        "config": asdict(cfg),
+        "seed": cfg.seed,
+        "generations_run": gen,
+        "evaluations": gen * cfg.pop_size,
+        "wall_seconds": round(time.time() - t_start, 2),
+        "history": history,
+        "hall_of_fame": hall,
+        "champion": champ,
+        "null_barrier": bench.null_barrier,
+        "seeds_used": [ex.to_pretty(s, bench.var_names) for s in seeds] if seeds else [],
+        "physics_seeded": cfg.physics_seeded and not cfg.blind_mode,
+    }
+
+
+# ------------------------------------------------------------------ serileştirme
+def serialize_eval(ev: fl.Evaluation, bench) -> dict:
+    return {
+        "formula": ex.to_pretty(ev.tree, bench.var_names),
+        "python": ex.to_python(ev.tree, bench.var_names),
+        "tree": repr(ev.tree),
+        "cost": round(ev.cost, 2),
+        "nodes": ev.nodes,
+        "depth": ev.depth,
+        "eval_us": round(ev.eval_us, 1),
+        "loss_train": ev.loss_train,
+        "loss_val": ev.loss_val,
+        "loss_test": ev.loss_test,
+        "max_rel_err_test": ev.notes.get("max_rel_err_test"),
+        "ok": ev.ok,
+        "verified": ev.verified,
+        "filters": [
+            {"id": f.id, "name": f.name, "group": f.group, "passed": f.passed,
+             "value": None if f.value is None or not np.isfinite(f.value) else float(f.value),
+             "limit": f.limit, "detail": f.detail}
+            for f in ev.filters
+        ],
+        "failures": ev.failures,
+    }
+
+
+# ------------------------------------------------------------------ null kalibrasyonu
+def calibrate_null_barrier(bench, cfg: Optional[EAConfig] = None,
+                           progress: Optional[Callable[[dict], None]] = None) -> float:
+    """
+    Numeroloji bariyeri: etiketleri karıştırılmış veride aynı mimarinin
+    en iyi hatası. Aynı popülasyon büyüklüğü, aynı operatör ailesi, kısa bütçe.
+    """
+    from . import benchmarks as bm
+    cfg = cfg or EAConfig()
+    ncfg = copy.copy(cfg)
+    ncfg.seed = cfg.seed + 977
+    ncfg.generations = max(10, cfg.generations // 4)
+    ncfg.physics_seeded = False
+    ncfg.patience = 10_000
+    null_bench = bm.shuffle_targets(bench, seed=cfg.seed + 13)
+    if progress:
+        progress({"type": "log", "msg": f"null kalibrasyonu ({null_bench.key}) başladı…"})
+    res = run(null_bench, ncfg, progress=None)
+    best = min((h["loss_val"] for h in res["hall_of_fame"]), default=float("inf"))
+    return float(best)

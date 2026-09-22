@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS / editör
+.DS_Store
+.idea/
+.vscode/
+
+# NOT: aşağıdakiler BİLİNÇLİ olarak takip edilir (kalıcı arşiv):
+#   data/            referans veri + koşu kayıtları
+#   reports/         insan-okur raporlar
+#   docs/            kalıcı statik yayın (GitHub Pages)

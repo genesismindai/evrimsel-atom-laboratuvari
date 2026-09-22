@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yöntem ve dürüstlük kuralları</title>
+<style>
+  body{margin:0;background:#080b10;color:#e6edf3;font:14.5px/1.65 ui-monospace,Menlo,Consolas,monospace}
+  .wrap{max-width:1020px;margin:0 auto;padding:26px 22px 70px}
+  h1{font-size:21px;color:#7ee787;margin:0 0 4px} h2{font-size:15px;color:#39d0d8;margin:26px 0 8px;text-transform:uppercase;letter-spacing:.1em}
+  h3{font-size:13.5px;color:#d29922;margin:18px 0 6px}
+  p,li{color:#c9d1d9} li{margin:3px 0}
+  code{background:#131b25;padding:1px 5px;border-radius:4px;color:#ffa657}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  td,th{border:1px solid #1d2836;padding:6px 9px;text-align:left;vertical-align:top} th{background:#131b25;color:#79c0ff}
+  .ok{border-left:3px solid #3fb950;padding-left:12px;color:#bfe3c6}
+  .warn{border-left:3px solid #d29922;padding-left:12px;color:#e3d3a4}
+  .no{border-left:3px solid #f85149;padding-left:12px;color:#ffc9c4}
+  a{color:#58a6ff}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Yöntem, filtre zinciri ve dürüstlük kuralları</h1>
+<p class="ok"><b>İddia:</b> Atom fiziğinin en ucuz matematiksel formları, gerçek sayısal çözücü verisinden,
+filtreli bir evrimsel algoritma ile yeniden keşfedilebilir ve bu keşif trilyon ölçeğinde atom
+değerlendirmesine (topluluk simülasyonu) ucuz biçimde ölçeklenir.</p>
+<p class="no"><b>İddia değil:</b> 10<sup>12</sup> atomun tam çok-cisimli kuantum durumu hesabı (durum uzayı 2<sup>N</sup>,
+imkânsız) ve kabuk formunun “numerolojik tesadüf” olarak veriye uydurulması (filtrelerle elenir).</p>
+
+<h2>1. Referans veri (ezber yok)</h2>
+<p>Veri hiçbir kapalı formdan üretilmez. Radyal Schrödinger denklemi, atomik birimlerde sonlu farklar
+ızgara yöntemi (N≈40 001 nokta) ile köşegenleştirilir ve bağımsız olarak doğrulanır:</p>
+<ul>
+  <li><b>Izgara yakınsaması:</b> h ve h/2 çözümleri + Richardson ekstrapolasyonu.</li>
+  <li><b>Eylem ilkesi durağanlığı:</b> <code>A(λ)=&lt;H&gt;(λ)=λ²&lt;T&gt;+λ&lt;V&gt;</code> fonksiyonunun λ=1'de türevi
+      <code>2&lt;T&gt;+&lt;V&gt;≈0</code>. Sayısal artık raporlanır (≈10⁻⁵ mertebesi).</li>
+  <li><b>Virial teoremi:</b> <code>−&lt;V&gt;/&lt;T&gt;≈2</code>.</li>
+  <li><b>Dejenerasyon kanıtı:</b> E'nin l'den bağımsız olduğu, l=0,1,2 çözümleri karşılaştırılarak sayısal olarak gösterilir.</li>
+</ul>
+
+<h2>2. Filtre zinciri (“numeroloji savar”)</h2>
+<table>
+<tr><th>#</th><th>filtre</th><th>ölçüt</th><th>tür</th></tr>
+<tr><td>F1</td><td>ucuz katman</td><td>exp/log/trig/tanh/gerçel kuvvet yasak; yalnız +,−,×,÷ ve küçük tamsayı kuvvetleri</td><td>eleme</td></tr>
+<tr><td>F2</td><td>ölçek simetrisi (boyut analizi)</td><td>E(λZ,n)=λ²E(Z,n) — ölçek yasası veriden bağımsız kurulur, aday uymalı (sapma ≤ 5%)</td><td>eleme</td></tr>
+<tr><td>F3</td><td>donanım güvenliği</td><td>NaN/inf yok, |sabit|≤10⁶, |değer|≤10¹², NaN’a açık gerçel kuvvet yok, 1000 nokta ≤ 400 µs</td><td>eleme</td></tr>
+<tr><td>F4</td><td>numeroloji bariyeri</td><td>aynı mimari ETİKETLERİ KARIŞTIRILMIŞ veride çalıştırılır; en iyi hatanın 5 katı altına inmeyen aday elenir</td><td>eleme</td></tr>
+<tr><td>F5</td><td>Hellmann–Feynman</td><td>dE/dZ = −⟨1/r⟩ (bağımsız sayısal referansa karşı, ≤1%)</td><td>doğrulama</td></tr>
+<tr><td>F6</td><td>virial / eylem durağanlığı</td><td>E = −(Z/2)⟨1/r⟩ ⇒ eylem ilkesi kısıtı (≤1%)</td><td>doğrulama</td></tr>
+<tr><td>F7</td><td>ekstrapolasyon</td><td>eğitim bölgesinin DIŞINDAKİ doğrulama rejiminde ≤ 4×tolerans</td><td>doğrulama</td></tr>
+<tr><td>F8</td><td>referans güvenilirliği</td><td>sayısal çözücünün göreli eylem artığı &lt; 1%</td><td>doğrulama</td></tr>
+</table>
+<p class="warn">Sınav (test) kümesi hiçbir filtrede ve hiçbir seçim adımında kullanılmaz; yalnızca nihai raporda bir kez ölçülür.</p>
+
+<h2>3. Uygunluk fonksiyonu (neden “en ucuz”)</h2>
+<p><code>skor = log₁₀( max(hata, gürültü_tabanı) ) + cₘ · maliyet/bütçe</code></p>
+<p>Gürültü tabanı, referans çözücünün ölçülebilir hassasiyetidir (ör. enerji için 2×10⁻⁴).
+Hata tabanın altına indiğinde ek bilgi taşımaz; bu nedenle seçim <b>en az işlemli</b> forma kayar.
+Bu, “en basit formül” isteğinin keyfi bir estetik değil, bilgi-kuramsal (MDL) gerekçesidir.</p>
+<p>Maliyet modeli: topla/çıkar/çarp = 1, bölme = 3, karekök = 4, transandantal = 14–18, gerçel kuvvet = 26 birim.
+Transandantaller donanımda ~10–50× daha pahalı ve güç yoğunluğu yüksektir; F1 bunları ürün formüllerden tamamen eler.</p>
+
+<h2>4. Arama motoru</h2>
+<ul>
+  <li>Ada modeli (3 ada, göç) + turnuva seçimi + elbow çaprazlama + 5 mutasyon operatörü (değişim, sarma, budama, sabit, alt-ağaç).</li>
+  <li><b>Sayısal sabit ayarı:</b> her bireyde Gauss–Newton (LM benzeri) ile sabitler veriye oturtulur.</li>
+  <li><b>MDL sabit yuvarlama:</b> tüm sabitler birden, “en kısa tanım” ölçütüyle basit rasyonel değerlere çekilir;
+      veri uygunluğu gürültü tabanının üstüne çıkarsa yuvarlama reddedilir. Böylece “0.995321/(−1.99074)” gibi
+      uydurma basamaklar “−1/2”ye indirgenir.</li>
+  <li>Cebirsel sadeleştirme: sabit katlama, sıfır/birim eleme, negatif/kare özdeşlikleri, sabit zinciri katlama.</li>
+</ul>
+
+<h2>5. Ölçeklendirme (trilyon atom)</h2>
+<p>Keşfedilen formül, (Z,n) durum uzayında tanımlı bir <b>topluluk</b> (ensemble) üzerinde öbekler halinde
+(streaming) değerlendirilir; bellek O(öbek) kalır. Ölçülen ns/atom değerinden 10⁶, 10⁹, 10¹² atom için
+süre/işlem/enerji projeksiyonu yapılır ve pahalı sayısal çözücüye göre hızlanma hesaplanır.</p>
+<p class="warn">Süreler doğrusal dışdeğerlemedir; enerji (joule) tahminleri ilan edilen J/işlem varsayımına dayanır.
+Gerçek koşu, beyan edilen atom sayısında (varsayılan 10⁸) yapılır ve ölçülür.</p>
+
+<h2>6. Yeniden üretilebilirlik</h2>
+<ul>
+  <li>Her koşu: tohum (seed), yapılandırma, referans veri sha256’sı ve tüm formüllerle birlikte
+      <code>data/runs/&lt;id&gt;.json</code> olarak kaydedilir.</li>
+  <li>İnsan-okur rapor: <code>reports/&lt;id&gt;.md</code> ve <code>.html</code>.</li>
+  <li>Komut satırı: <code>python3 runner_cli.py --preset hizli --seed 7</code> ·
+      sunucu: <code>python3 web/server.py</code> (adres yayın kaydına yazılır).</li>
+</ul>
+<p><a href="/">← canlı panele dön</a> · <a href="/publish">yayın kaydı →</a></p>
+</div></body></html>

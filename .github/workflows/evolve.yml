@@ -1,0 +1,98 @@
+name: Keşif koşusu + kalıcı yayın (GitHub Pages)
+
+# Neden bu dosya var?
+# Geliştirme sanal alanı (sandbox) oturumla birlikte kapanır; oradaki sunucu yaşayamaz.
+# Bu iş akışı, Python kodunu GitHub'ın ÜCRETSİZ koşucularında çalıştırır:
+#   1) evrimsel algoritma yeni bir tohumla koşar  (Python + numpy/scipy, bulutta)
+#   2) sonuçlar depoya işlenir (data/, reports/)  -> git geçmişi = sonsuz arşiv
+#   3) statik site (docs/) yeniden üretilir ve GitHub Pages'te ÜCRETSİZ yayınlanır
+# Böylece site, hiçbir sunucu ayakta olmasa da kalıcı olarak erişilebilir kalır.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"      # her 6 saatte bir (UTC)
+  workflow_dispatch:            # elle tetikleme
+    inputs:
+      preset:
+        description: "Ön ayar (hizli/standart/derin)"
+        default: "hizli"
+        required: false
+      atoms:
+        description: "Gerçek koşulacak atom sayısı (örn. 1e8)"
+        default: "1e8"
+        required: false
+
+permissions:
+  contents: write               # sonuçları depoya işlemek için
+  pages: write                  # Pages yayını için
+  id-token: write
+
+concurrency:
+  group: "evolve-pages"
+  cancel-in-progress: false
+
+jobs:
+  evolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Bağımlılıklar (yalnız numpy + scipy)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy scipy
+
+      - name: Çözücü öz-testi (bağımsız doğrulama)
+        run: python -c "from atomic_ea import physics as ph; ph.solver_self_test()"
+
+      - name: Evrimsel keşif koşusu (Python, bulutta)
+        env:
+          EA_AUTO_EXPORT: "1"     # her koşudan sonra docs/ (statik yayın) tazelenir
+        run: |
+          PRESET="${{ github.event.inputs.preset || 'hizli' }}"
+          ATOMS="${{ github.event.inputs.atoms || '1e8' }}"
+          # Her koşuda farklı tohum: run_number ile deterministik ama çeşitlenen arama
+          SEED=$(( 1000 + ${{ github.run_number }} ))
+          python runner_cli.py --preset "$PRESET" --seed "$SEED" --atoms "$ATOMS"
+
+      - name: Statik yayını üret (docs/)
+        run: python export_static.py --out docs
+
+      - name: Sonuçları depoya işle (kalıcı arşiv)
+        run: |
+          git config user.name  "evrimsel-lab[bot]"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A data reports docs
+          if git diff --staged --quiet; then
+            echo "değişiklik yok"
+          else
+            git commit -m "keşif koşusu #${{ github.run_number }} (seed $((1000 + ${{ github.run_number }})))"
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+            git push
+          fi
+
+      - name: Pages yapılandır
+        uses: actions/configure-pages@v5
+
+      - name: Artefakt yükle
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: evolve
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

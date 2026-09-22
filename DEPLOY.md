@@ -25,6 +25,35 @@ En sağlam düzen: **ikisini birlikte** kullanmak → site hiç düşmez (Yol A)
 Python kodu GitHub'ın ücretsiz koşucularında koşar; sonuçlar depoya işlenir ve
 `docs/` klasörü GitHub Pages'te **kalıcı** olarak yayınlanır. Sunucu gerekmez.
 
+### Yol A / hızlı kurulum — tek komut (`setup_github.sh`)
+
+Depoyu siz açmak zorunda değilsiniz; betik depoyu oluşturur, kodu gönderir,
+Pages'i etkinleştirir, Actions izinlerini ayarlar ve ilk koşuyu tetikler:
+
+```bash
+cd atomic-ea
+export GITHUB_TOKEN=github_pat_xxxxxxxx     # aşağıdaki izinlerle
+./setup_github.sh <KULLANICI>/evrimsel-atom-laboratuvari public
+```
+
+**Token izinleri** (GitHub → Settings → Developer settings → *Fine-grained tokens* → Generate new token):
+
+| izin | neden |
+|---|---|
+| Contents: **Read and write** | kodu göndermek, koşu sonuçlarını işlemek |
+| Actions: **Read and write** | iş akışını tetiklemek |
+| Pages: **Read and write** | Pages'i etkinleştirmek |
+| Administration: **Read and write** | depoyu oluşturmak / Pages ayarını değiştirmek |
+| Metadata: Read (otomatik) | zorunlu |
+
+Token yalnızca betiğin çalışma anında kullanılır, **diske yazılmaz**; işiniz bitince
+GitHub'da tokenı silin. Betik idempotenttir: tekrar çalıştırmak zarar vermez.
+
+Depoyu tarayıcıda kendiniz açtıysanız (README ile açtıysanız bile) aynı betik
+geçmişleri birleştirip gönderir.
+
+### Yol A / elle kurulum (token paylaşmak istemiyorsanız)
+
 1. **Depo oluşturun.** GitHub'da `evrimsel-atom-laboratuvari` adında **Public** bir depo açın.
 2. **Kodu yükleyin.** Bu proje klasöründe:
    ```bash
@@ -37,13 +66,24 @@ Python kodu GitHub'ın ücretsiz koşucularında koşar; sonuçlar depoya işlen
    ```
 3. **Pages'i açın.** Depo → *Settings → Pages* → **Source: GitHub Actions**.
 4. **İş akışı hazır.** `.github/workflows/evolve.yml` dosyası şunları yapar:
-   * her 6 saatte bir (veya elle) evrimsel keşif koşusu (Python + numpy/scipy),
+   * **her 6 saatte bir** hızlı koşu + **gece 02:43** standart (daha derin) koşu
+     (veya elle: *Actions → Run workflow*, ön ayar/atom sayısı seçilebilir),
    * sonuçları `data/`, `reports/` klasörlerine işler (git geçmişi = sonsuz arşiv),
    * `docs/` statik sitesini yeniden üretir ve **Pages'e yayınlar**.
 5. **Elle çalıştırma:** *Actions → Keşif koşusu + kalıcı yayın → Run workflow*
    (ön ayar ve atom sayısı seçilebilir).
 6. **Adresiniz:** `https://<KULLANICI>.github.io/<DEPO>/` — bu adres **sonsuza kadar**
    çalışır; sunucu, oturum, bilgisayar kapansa da.
+
+### Süreklilik notları
+
+* GitHub, zamanlanmış iş akışlarını **60 gün hareketsizlikte** durdurur; bizim akış
+  her koşuda depoya commit attığı için bu kural tetiklenmez — yani gerçekten sonsuz
+  döngüde kalır.
+* Herkese açık (public) depolarda Actions **dakika sınırı yoktur**; özel (private)
+  depoda ayda 2.000 ücretsiz dakika vardır (koşu ≈3 dk → ayda ~120 koşu sığar).
+* İş akışı zamanlama saatleri UTC'dir; Türkiye saati için +3 ekleyin
+  (02:43 UTC = 05:43 TR).
 
 Yerelde aynısını yapmak için:
 ```bash

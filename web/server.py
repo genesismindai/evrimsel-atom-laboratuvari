@@ -248,6 +248,13 @@ class Handler(BaseHTTPRequestHandler):
                                    "projections": rep["projections"]})
             except Exception as e:
                 return self._json({"ok": False, "error": f"{type(e).__name__}: {e}"}, 400)
+        if p == "/api/export":
+            try:
+                import export_static
+                man = export_static.build(verbose=False)
+                return self._json({"ok": True, "manifest": man})
+            except Exception as e:
+                return self._json({"ok": False, "error": f"{type(e).__name__}: {e}"}, 500)
         if p == "/api/stop":
             ENGINE.stop_flag = True
             ENGINE.log("durdurma isteği alındı — koşu güvenli noktada sonlanacak")

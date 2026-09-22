@@ -38,18 +38,41 @@ atomic_ea/
                   MDL sabit yuvarlama, arşiv, onur listesi, null kalibrasyonu
   throughput.py   trilyon ölçeği muhasebesi (ölçüm + projeksiyon + pahalı yol karşılaştırması)
 runner.py         koşu orkestrasyonu, kalıcı kayıt, Markdown/HTML rapor
-runner_cli.py     komut satırı arayüzü
+runner_cli.py     komut satırı arayüzü + kesintisiz mod (--forever)
+export_static.py  kalıcı statik yayın üreticisi (docs/; veri gömülü, sunucu gerekmez)
+publish_artifacts.sh  statik üret → commit → push yardımcısı
+deploy/           Dockerfile (HF Spaces), render.yaml, HF Space README
+.github/workflows/evolve.yml  zamanlanmış Python koşusu + GitHub Pages yayını
+DEPLOY.md         kalıcı ve ücretsiz yayın kılavuzu (adım adım)
 web/server.py     bağımlılıksız (stdlib) yayın sunucusu + SSE + API
 web/*.html        panel, yöntem, yayın kaydı sayfaları
 data/             referans veri, koşu kayıtları, canlı ilerleme, yayın kaydı
 reports/          insan-okur raporlar (md + html)
 ```
 
+## Kalıcı yayın (sunucu düşse de site ayakta)
+
+Geliştirme ortamı (sandbox) oturumla kapanır; bu yüzden kalıcılık bulutta kurulur:
+
+* **Yol A — GitHub Actions + Pages (önerilen, sonsuz ve ücretsiz):**
+  Python kodu GitHub koşucularında zamanlanır, sonuçlar depoya işlenir, `docs/` statik
+  sitesi GitHub Pages'te kalıcı olarak yayınlanır. Kurulum: **`DEPLOY.md`** ve hazır iş
+  akışı: `.github/workflows/evolve.yml`.
+* **Yol B — 7/24 canlı Python sunucusu (ücretsiz):** `deploy/Dockerfile` (Hugging Face
+  Spaces) veya `deploy/render.yaml` (Render). `AUTO_START=1` + `AUTO_FOREVER=1` ile
+  açılışta kesintisiz keşif başlar.
+* **Statik site üretimi:** `python3 export_static.py --out docs` → tüm veri gömülü tek
+  dosyalık site (ağ çağrısı yapmaz, sunucu gerektirmez).
+* **Yayınlama yardımcısı:** `./publish_artifacts.sh "mesaj"` → statik siteyi üretir,
+  sonuçları commit'leyip push eder.
+
 ## Koşular
 
 ```bash
-python3 runner_cli.py --preset hizli --seed 7          # hızlı koşu
+python3 runner_cli.py --preset hizli --seed 7          # hızlı koşu (+ docs/ otomatik tazelenir)
 python3 runner_cli.py --preset standart --seed 1       # standart
+python3 runner_cli.py --forever --interval 60          # kesintisiz keşif modu (touch data/STOP ile durur)
+python3 export_static.py --out docs                    # kalıcı statik yayın
 python3 web/server.py                                  # canlı yayın paneli (port 8000)
 ```
 

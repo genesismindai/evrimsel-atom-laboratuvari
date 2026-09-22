@@ -6,5 +6,9 @@
  "enerji|pop140|gen10|seed11": 0.8589581067732631,
  "ters_yaricap|pop140|gen10|seed11": 1.0426831531554441,
  "etkin_potansiyel|pop140|gen10|seed11": 0.9966310210685687,
- "yukawa|pop140|gen10|seed11": 0.7068927654348455
+ "yukawa|pop140|gen10|seed11": 0.7068927654348455,
+ "enerji|pop140|gen10|seed1001": 0.9699945455361881,
+ "ters_yaricap|pop140|gen10|seed1001": 0.964370945051884,
+ "etkin_potansiyel|pop140|gen10|seed1001": 0.996782906896881,
+ "yukawa|pop140|gen10|seed1001": 0.7035505264412716
 }

@@ -2,6 +2,8 @@
 
 **🔴 Canlı kalıcı yayın: <https://genesismindai.github.io/evrimsel-atom-laboratuvari/>**
 
+![Lisansa bak](https://img.shields.io/badge/lisans-GPL--3.0--or--later-blue.svg)
+
 **Lisans: [GPL-3.0-or-later](LICENSE)** — özgür yazılım: kullanabilir, inceleyebilir, değiştirebilir ve
 dağıtabilirsiniz; türev çalışmaların kaynak kodu da aynı lisansla açık kalmalıdır.
 (saatte bir otomatik koşu · gece standart koşu · her koşu arşive işlenir — sunucu gerekmez)

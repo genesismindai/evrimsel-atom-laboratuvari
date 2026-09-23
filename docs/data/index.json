@@ -54,5 +54,19 @@
    "etkin_potansiyel": "−(Z/r) + l·(l + 1)/(2·r²)",
    "yukawa": "−(0.5·Z²) + Z·α + -0.666667·α²"
   }
+ },
+ {
+  "run_id": "20260923-073938-hizli-s1002",
+  "preset": "hizli",
+  "seed": 1002,
+  "started": "2026-09-23T07:39:38+00:00",
+  "finished": "2026-09-23T07:41:55+00:00",
+  "wall_seconds_total": 136.32,
+  "champions": {
+   "enerji": "-0.5·Z²/n²",
+   "ters_yaricap": "Z/n²",
+   "etkin_potansiyel": "−(Z/r) + l·(l + 1)/(2·r²)",
+   "yukawa": "−(0.5·Z²) + (Z − 0.666667·α)·α"
+  }
  }
 ]

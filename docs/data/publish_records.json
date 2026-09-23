@@ -136,5 +136,19 @@
    "8000-i2yr3m9jnhra1c5poxpo9.e2b.app"
   ],
   "note": "Bu adresler geçici/oturumluk olabilir. Bilimsel kanıtlar kalıcıdır: data/runs/*.json ve reports/*.md|.html"
+ },
+ {
+  "recorded_at": "2026-09-23T09:42:19+00:00",
+  "bind": "0.0.0.0:8000",
+  "observed_origins": [],
+  "note": "Bu adresler geçici/oturumluk olabilir. Bilimsel kanıtlar kalıcıdır: data/runs/*.json ve reports/*.md|.html"
+ },
+ {
+  "recorded_at": "2026-09-23T09:42:20+00:00",
+  "bind": "0.0.0.0:8000",
+  "observed_origins": [
+   "8000-iiix3xh0wt5qjamlib6pn.e2b.app"
+  ],
+  "note": "Bu adresler geçici/oturumluk olabilir. Bilimsel kanıtlar kalıcıdır: data/runs/*.json ve reports/*.md|.html"
  }
 ]

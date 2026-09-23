@@ -1,6 +1,9 @@
 # Evrimsel Atom Fiziği Laboratuvarı
 
 **🔴 Canlı kalıcı yayın: <https://genesismindai.github.io/evrimsel-atom-laboratuvari/>**
+
+**Lisans: [GPL-3.0-or-later](LICENSE)** — özgür yazılım: kullanabilir, inceleyebilir, değiştirebilir ve
+dağıtabilirsiniz; türev çalışmaların kaynak kodu da aynı lisansla açık kalmalıdır.
 (saatte bir otomatik koşu · gece standart koşu · her koşu arşive işlenir — sunucu gerekmez)
 
 Filtreli evrimsel algoritma (ada modeli sembolik regresyon) ile **atom fiziğinin en ucuz
@@ -112,3 +115,27 @@ Paneller: `/` canlı evrim · `/methods` yöntem ve dürüstlük kuralları · `
 > Enerji yasası bilinen kapalı forma (Rydberg) karşılık gelir: `E = −Z²/(2n²) Hartree`.
 > Bu, "keşfin doğru olduğunun" bağımsız göstergesidir — ama veri o formülden üretilmedi,
 > evrim onu sayısal çözücü verisinden buldu ve filtreler doğruladı.
+
+## Lisans
+
+Bu proje **GNU Genel Kamu Lisansı sürüm 3 (veya sonraki sürümleri)** ile lisanslanmıştır —
+tam metin: [`LICENSE`](LICENSE).
+
+```
+Copyright (C) 2026 genesismindai (Evrimsel Atom Laboratuvarı)
+
+Bu program özgür yazılımdır: GNU Genel Kamu Lisansı (GPL) sürüm 3 veya sonraki
+sürümleri koşulları altında yeniden dağıtabilir ve/veya değiştirebilirsiniz.
+Ayrıntılar için LICENSE dosyasına bakın.
+```
+
+Ne anlama gelir (kısa):
+
+* **Kullanma/inceleme/değiştirme/dağıtma** serbesttir — bilimsel şeffaflık bunu gerektirir:
+  keşfedilen formüller, filtreler ve referans veri üretimi denetlenebilir kalır.
+* **Copyleft:** kodu alıp değiştirerek dağıtırsanız (veya bir hizmette sunarsanız),
+  türev çalışmanın kaynak kodu da **aynı GPL-3.0 koşullarıyla** açık olmalıdır.
+* **Garanti yoktur:** GPL-3.0 §15–17 uyarınca yazılım "olduğu gibi" sunulur; bilimsel
+  sonuçların doğruluğu için kendi doğrulamanızı yapın (proje bunun için `solver_self_test`
+  ve bağımsız filtre zincirini içerir).
+* Kaynak dosyalar başlarında **SPDX** tanımlayıcısı taşır: `SPDX-License-Identifier: GPL-3.0-or-later`.

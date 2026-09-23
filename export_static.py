@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 genesismindai (Evrimsel Atom Laboratuvarı)
+#
+# Bu program özgür yazılımdır: GNU Genel Kamu Lisansı (GPL) sürüm 3 veya
+# sonraki sürümleri koşulları altında yeniden dağıtabilir ve/veya
+# değiştirebilirsiniz. Ayrıntılar için LICENSE dosyasına bakın.
 """
 export_static.py — Kalıcı, ücretsiz yayın için STATİK site üreticisi.
 
@@ -132,6 +138,10 @@ def build(out_dir: str = "docs", verbose: bool = True,
 
     # yöntem + kalıcılık sayfaları
     shutil.copyfile(os.path.join(WEB, "methods.html"), os.path.join(out, "methods.html"))
+    # lisans metni kalıcı yayında da erişilebilir olsun (GPL-3.0-or-later)
+    _lic = os.path.join(ROOT, "LICENSE")
+    if os.path.exists(_lic):
+        shutil.copyfile(_lic, os.path.join(out, "LICENSE"))
     write_static_publish(out, payload)
     with open(os.path.join(out, ".nojekyll"), "w") as f:
         f.write("")     # GitHub Pages'in alt klasörleri olduğu gibi sunması için

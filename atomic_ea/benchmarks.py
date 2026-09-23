@@ -1,3 +1,9 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 genesismindai (Evrimsel Atom Laboratuvarı)
+#
+# Bu program özgür yazılımdır: GNU Genel Kamu Lisansı (GPL) sürüm 3 veya
+# sonraki sürümleri koşulları altında yeniden dağıtabilir ve/veya
+# değiştirebilirsiniz. Ayrıntılar için LICENSE dosyasına bakın.
 """
 benchmarks.py — Referans veritabanı ve problem tanımları.
 

@@ -1,0 +1,4 @@
+# Bulut koşusu (GitHub Actions) ve yerel çalışma için asgari bilimsel çekirdek.
+# Sunucu (web/server.py) saf stdlib'dir; ek paket gerektirmez.
+numpy>=1.26,<3
+scipy>=1.11

@@ -1,5 +1,8 @@
 # Evrimsel Atom Fiziği Laboratuvarı
 
+**🔴 Canlı kalıcı yayın: <https://genesismindai.github.io/evrimsel-atom-laboratuvari/>**
+(saatte bir otomatik koşu · gece standart koşu · her koşu arşive işlenir — sunucu gerekmez)
+
 Filtreli evrimsel algoritma (ada modeli sembolik regresyon) ile **atom fiziğinin en ucuz
 matematiksel formlarını**, *gerçek sayısal Schrödinger çözücüsünden* üretilen veriden yeniden
 keşfeden ve keşfi **trilyon ölçeğinde atom değerlendirmesine** ölçekleyen açık sistem.

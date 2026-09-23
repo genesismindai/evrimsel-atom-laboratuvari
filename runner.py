@@ -228,6 +228,45 @@ def known_limit_check(key: str, champ: dict, bench, n_probe: int = 400) -> Optio
         out.update({"limit": "V_eff = −Z/r + l(l+1)/(2r²) (tam ifade)",
                     "max_rel_deviation": float(rel.max()),
                     "mean_rel_deviation": float(rel.mean())})
+    elif key == "cok_elektron":
+        # 2 elektronlu seri için ANALİTİK 1/Z açılımı (HF limiti) — keşiften bağımsız teşhis
+        Zt = _np.arange(8, 15, dtype=float); Nt = _np.full_like(Zt, 2.0)
+        ref2 = -Zt ** 2 + 0.625 * Zt - 0.1576664
+        y = fn([Zt, Nt])
+        rel = _np.abs(y - ref2) / _np.abs(ref2)
+        out.update({"limit": "2e serisi HF limiti: E ≈ −Z² + (5/8)Z − 0.1576664",
+                    "max_rel_deviation": float(rel.max()), "mean_rel_deviation": float(rel.mean()),
+                    "note": ("Keşiften SONRA karşılaştırma; 1/Z açılımının kesilmesi nedeniyle "
+                             "artık O(1/Z) mertebesindedir.")})
+    elif key == "bag_h2":
+        R = _np.linspace(0.9, 2.2, n_probe)
+        E = fn([R])
+        i = int(_np.argmin(E))
+        Re = float(R[i])
+        k = float((fn([_np.array([Re + 1e-3])])[0] - 2 * E[i] + fn([_np.array([Re - 1e-3])])[0]) / 1e-6)
+        out.update({"limit": "H₂ deneysel/BO: R_e ≈ 1.4011 a₀, k ≈ 0.3694 au, ω ≈ 4401 cm⁻¹",
+                    "formula_R_e": Re, "formula_k": k,
+                    "rel_dev_R_e": abs(Re - 1.4011) / 1.4011,
+                    "rel_dev_k": abs(k - 0.3694) / 0.3694,
+                    "note": "Formülün kendi minimumundan okunan değerler; seçimde kullanılmadı."})
+    elif key == "kuvvet_h2":
+        Rs = _np.array([1.0, 1.4011, 1.8])
+        Fv = fn([Rs])
+        out.update({"limit": "F(R_e) = 0 (denge) ve F(R) < 0 (R > R_e'de çekici)",
+                    "formula_F_at_Re": float(Fv[1]), "formula_F_1.0": float(Fv[0]),
+                    "formula_F_1.8": float(Fv[2]),
+                    "note": ("Denge kuvveti sıfıra yakın olmalı; işaret yapısı da kontrol edilir "
+                             "(seçimde kullanılmadı).")})
+    elif key == "h2plus_olcek":
+        Rz = _np.array([1.0, 2.0, 3.0, 5.0])
+        y = fn([Rz, _np.ones_like(Rz)])
+        eps = y                                  # hedef elektronik enerji
+        # ayrışma limiti: ε(R→∞, Z=1) → −1/2 (H atomu)
+        out.update({"limit": "H₂⁺: ε(R→∞, Z=1) → −1/2 Hartree (H atomu limiti); ölçek yasası ε(R,Z)=Z²·ε(ZR,1)",
+                    "formula_eps_R1": float(eps[0]), "formula_eps_R2": float(eps[1]),
+                    "formula_eps_R5": float(eps[3]),
+                    "rel_dev_from_limit_R5": float(abs(eps[3] + 0.5) / 0.5),
+                    "note": "Ölçek yasası F2 filtresinde; burada yalnız büyük-R limiti teşhis edilir."})
     elif key == "yukawa":
         # Pertürbasyon serisi katsayıları: BAĞIMSIZ olarak yeniden hesaplanır
         alphas = _np.array([0.004, 0.008, 0.012, 0.016, 0.020])

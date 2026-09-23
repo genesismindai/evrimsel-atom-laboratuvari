@@ -10,8 +10,8 @@ name: Keşif koşusu + kalıcı yayın (GitHub Pages)
 
 on:
   schedule:
-    - cron: "17 */6 * * *"      # her 6 saatte bir: hızlı koşu (site taze kalır)
-    - cron: "43 2 * * *"        # gece 02:43: standart (daha derin arama)
+    - cron: "23 * * * *"        # saatte bir: hızlı koşu (keşif akışı sürekli canlı)
+    - cron: "43 2 * * *"        # gece 02:43 (TR 05:43): standart (daha derin arama)
   workflow_dispatch:            # elle tetikleme
     inputs:
       preset:

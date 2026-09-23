@@ -66,7 +66,7 @@ geçmişleri birleştirip gönderir.
    ```
 3. **Pages'i açın.** Depo → *Settings → Pages* → **Source: GitHub Actions**.
 4. **İş akışı hazır.** `.github/workflows/evolve.yml` dosyası şunları yapar:
-   * **her 6 saatte bir** hızlı koşu + **gece 02:43** standart (daha derin) koşu
+   * **saatte bir** hızlı koşu + **gece 02:43** standart (daha derin) koşu
      (veya elle: *Actions → Run workflow*, ön ayar/atom sayısı seçilebilir),
    * sonuçları `data/`, `reports/` klasörlerine işler (git geçmişi = sonsuz arşiv),
    * `docs/` statik sitesini yeniden üretir ve **Pages'e yayınlar**.

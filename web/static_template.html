@@ -182,7 +182,8 @@ function renderBenches(benches){
         <div class="stat"><b>${fmt(c.loss_test)}</b><span>sınav (eğitim dışı rejim)</span></div>
       </div>
       <div style="margin-top:8px">${filterChips(c)}</div>
-      <div class="small" style="margin-top:6px">python: <code>${c.python||"—"}</code> · doğrulandı: <b>${c.verified}</b></div>`;
+      <div class="small" style="margin-top:6px">python: <code>${c.python||"—"}</code> · doğrulandı: <b>${c.verified}</b></div>
+      ${(c.generalization_ok===false)?`<div class="warn" style="margin-top:6px">⚠️ genelleme uyarısı: sınav hatası toleransın 5 katından büyük — formül eğitim/doğrulama rejiminde geçerli, sınav rejiminde değil</div>`:""}`;
     if(res.known_limits && res.known_limits.limit){
       const kl = res.known_limits;
       html += `<h3>bilinen analitik limit karşılaştırması <span class="small">(teşhis — seçimde kullanılmadı)</span></h3>

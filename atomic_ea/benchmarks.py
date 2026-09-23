@@ -47,6 +47,7 @@ class Benchmark:
     notes: Dict[str, float] = field(default_factory=dict)
     reference_note: str = ""
     probe_X: List[np.ndarray] = field(default_factory=list)
+    cross_checks: Dict[str, object] = field(default_factory=dict)   # bağımsız eş keşifler
 
 
 # ------------------------------------------------------------------ veri üretimi
@@ -299,9 +300,17 @@ def _yukawa_bench(ref: dict) -> Benchmark:
     )
 
 
-def build_all(verbose: bool = True) -> List[Benchmark]:
+def build_all(verbose: bool = True, with_bond: bool = True) -> List[Benchmark]:
     ref = load_reference(verbose=verbose)
     benches = [_energy_bench(ref), _invr_bench(ref), _pot_bench(ref), _yukawa_bench(ref)]
+    if with_bond:
+        try:
+            from . import hbond                      # döngüsel içe aktarmayı önlemek için burada
+            bref = hbond.load_reference_bond(verbose=verbose)
+            benches += hbond.build_benchmarks(bref, verbose=verbose)
+        except Exception as e:
+            if verbose:
+                print(f"[benchmarks] bağ/kuvvet seti yüklenemedi: {type(e).__name__}: {e}")
     meta_path = os.path.join(DATA_DIR, "reference_meta.json")
     meta = json.load(open(meta_path)) if os.path.exists(meta_path) else {}
     for b in benches:

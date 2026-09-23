@@ -109,33 +109,63 @@ def F1_syntax(tree: ex.Tree, bench, tier: str = "cheap") -> FilterResult:
 
 def F2_scaling(tree: ex.Tree, bench) -> FilterResult:
     """
-    Boyut analizi filtresi (veriden kurulan ölçek yasası).
+    Boyut/ölçek analizi filtresi. Üç tür denetim:
 
-    Sayısal çözücüden, E(Z,n) için ölçek yasası E(lam Z, n) = lam^2 E(Z,n)
-    olduğu bağımsız olarak doğrulanmıştır. Aday formül de aynı log-log eğimi
-    vermek zorundadır; aksi halde birim/boyut tutarsızdır (numeroloji kokusu).
+      * "exact": E(λx, ...) = λ^p·E(x, ...) — veriden bağımsız doğrulanan ölçek yasası
+      * "also":  diğer değişkenlerin eşzamanlı θ→λ^q değişimi (ör. R→R/λ, Z→λZ)
+      * "asymptotic": d log|y| / d log x üssünün verilen noktalarda hedefe yakınlığı
+                     (ör. çok elektronlu atomlarda Z→∞ için üs → 2)
     """
     if not bench.scaling_specs:
         return FilterResult("F2", "ölçek simetrisi", True, detail="bu problemde ölçek yasası yok/atlandı")
     worst = 0.0
-    detail = []
+    details: List[str] = []
     for spec in bench.scaling_specs:
-        vi, p = spec["var"], spec["power"]
-        lam = spec["lambdas"]
+        kind = spec.get("kind", "exact")
+        if kind == "asymptotic":
+            vi = spec["var"]; tgt = float(spec["target_exponent"])
+            d = float(spec.get("delta", 0.2)); tol = float(spec.get("tolerance", 0.05))
+            worst_local = 0.0
+            for pt in spec["points"]:
+                X0 = list(spec.get("X0", [None, None]))
+                X0[vi] = np.array([float(pt[0])])
+                if len(pt) > 1:
+                    X0[1 if vi == 0 else 0] = np.array([float(pt[1])])
+                Xp = list(X0); Xm = list(X0)
+                Xp[vi] = Xp[vi] * (1.0 + d); Xm[vi] = Xm[vi] * (1.0 - d)
+                yp = float(np.ravel(ex.evaluate(tree, Xp))[0])
+                ym = float(np.ravel(ex.evaluate(tree, Xm))[0])
+                y0 = float(np.ravel(ex.evaluate(tree, X0))[0])
+                if not all(np.isfinite([yp, ym, y0])) or min(abs(y0), abs(yp), abs(ym)) < 1e-12:
+                    worst_local = math.inf; break
+                p_eff = (math.log(abs(yp)) - math.log(abs(ym))) / (math.log(Xp[vi][0]) - math.log(Xm[vi][0]))
+                worst_local = max(worst_local, abs(p_eff - tgt))
+            worst = max(worst, worst_local / max(tol, 1e-9))
+            details.append(f"asimptotik üs → {tgt}: sapma {worst_local:.2e}")
+            continue
+        vi, pw = spec["var"], spec["power"]
+        also = spec.get("also", [])
+        tol = float(spec.get("tolerance", 5e-2))
         X0 = list(spec["X0"])
         y0 = ex.evaluate(tree, X0)
-        for L in lam:
+        worst_local = 0.0
+        for L in spec["lambdas"]:
             XL = list(X0)
             XL[vi] = np.asarray(XL[vi]) * L
+            for (j, q) in also:
+                XL[j] = np.asarray(XL[j]) * (L ** q)
             yL = ex.evaluate(tree, XL)
             with np.errstate(divide="ignore", invalid="ignore"):
-                ratio = yL / (L**p * y0)
+                ratio = yL / (L ** pw * y0)
             r = np.abs(ratio - 1.0)
             r = r[np.isfinite(r)]
-            worst = max(worst, float(np.max(r)) if r.size else math.inf)
-        detail.append(f"Δlog/Δlog({bench.var_names[vi]})≈{p}: sapma {worst:.2e}")
-    return FilterResult("F2", "ölçek simetrisi (boyut analizi)", worst <= 5e-2,
-                        worst, 5e-2, "; ".join(detail))
+            worst_local = max(worst_local, float(np.max(r)) if r.size else math.inf)
+        worst = max(worst, worst_local / max(tol, 1e-9))
+        tag = f"eşzamanlı({bench.var_names[vi]}×λ" + "".join(
+            f", {bench.var_names[j]}×λ^{q}" for j, q in also) + f")" if also else bench.var_names[vi]
+        details.append(f"ölçek {tag}: en kötü sapma {worst_local:.2e} (tolerans {tol:.0e})")
+    return FilterResult("F2", "ölçek simetrisi (boyut analizi)", worst <= 1.0,
+                        worst, 1.0, "; ".join(details) + " [normalize edilmiş artık]")
 
 
 def F3_robustness(tree: ex.Tree, bench, eval_us: float, time_budget_us: float) -> FilterResult:
@@ -242,6 +272,48 @@ def F6_virial_action(tree: ex.Tree, bench) -> FilterResult:
                         err, 1e-2, f"göreli hata {err:.3e}", group="DOĞRULAMA")
 
 
+def F9_force_consistency(tree: ex.Tree, bench) -> FilterResult:
+    """
+    Mekanik Hellmann–Feynman / türev tutarlılığı ( iki yönlü ).
+
+      (a) Aday bir ENERJİ eğrisi ise:  dE/dR ≈ F_ref  (bağımsız sonlu fark kuvveti)
+      (b) Aday bir KUVVET ise:  dE_es/dR ≈ −F_aday  — burada E_es, BAŞKA bir
+          benchmark'ta bağımsız keşfedilen enerji formülüdür. İki ayrı keşif,
+          birbirine yalnızca fizik yasasıyla bağlıdır; eğri uydurarak sağlanamaz.
+    """
+    spec = bench.physics_checks.get("force_consistency")
+    cross = getattr(bench, "cross_checks", None) or {}
+    if spec is None and not cross.get("energy_tree"):
+        return FilterResult("F9", "türev tutarlılığı (kuvvet = −dE/dR)", True,
+                            group="DOĞRULAMA", detail="uygulanamaz")
+
+    # (b) çapraz kontrol: aday kuvvet, eş keşfedilen enerjinin türeviyle karşılaştırılır
+    if spec is None and cross.get("energy_tree") is not None:
+        X = list(bench.val.X)
+        R = np.asarray(X[0], float)
+        h = 1e-3 * np.maximum(np.abs(R), 1e-3)
+        Xp = [R + h] + list(X[1:]); Xm = [R - h] + list(X[1:])
+        yp = ex.evaluate(cross["energy_tree"], Xp)
+        ym = ex.evaluate(cross["energy_tree"], Xm)
+        dEdR = (yp - ym) / (2 * h)
+        yF = ex.evaluate(tree, X)
+        err = rel_rmse(-dEdR, yF)
+        return FilterResult("F9", "türev tutarlılığı (eş keşif: −dE/dR vs F)", err <= 3e-2,
+                            err, 3e-2, f"enerji keşfi ile kuvvet keşfi uyumu: {err:.2e}",
+                            group="DOĞRULAMA")
+
+    # (a) referans kuvvete karşı
+    X = list(spec["X"])
+    R = np.asarray(X[0], float)
+    h = 1e-3 * np.maximum(np.abs(R), 1e-3)
+    Xp = [R + h] + list(X[1:]); Xm = [R - h] + list(X[1:])
+    yp = ex.evaluate(tree, Xp); ym = ex.evaluate(tree, Xm)
+    dEdR = (yp - ym) / (2 * h)
+    err = rel_rmse(-dEdR, np.asarray(spec["F"], float))
+    return FilterResult("F9", "türev tutarlılığı (dE/dR = −F_ref)", err <= 3e-2, err, 3e-2,
+                        f"bağımsız kuvvet referansına karşı: {err:.2e}", group="DOĞRULAMA")
+
+
 def F7_extrapolation(loss_val: float, tol: float, factor: float = 4.0) -> FilterResult:
     return FilterResult("F7", "ekstrapolasyon (eğitim dışı rejim)", loss_val <= tol * factor,
                         loss_val, tol * factor,
@@ -284,6 +356,7 @@ def full_eval(ev: Evaluation, bench, tier: str = "cheap",
     fs.append(F6_virial_action(ev.tree, bench))
     fs.append(F7_extrapolation(ev.loss_val, bench.tol_rel))
     fs.append(F8_reference_action(bench))
+    fs.append(F9_force_consistency(ev.tree, bench))
     ev.filters = fs
     ev.ok = all(f.passed for f in fs if f.group == "ELEME")
     ev.verified = ev.ok and all(f.passed for f in fs)

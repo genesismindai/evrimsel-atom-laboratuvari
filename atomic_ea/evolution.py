@@ -70,7 +70,28 @@ def _f(op: str, *a: ex.Tree) -> ex.Tree:
     return ("f", op) + tuple(a)
 
 
-def physics_seeds(var_names: List[str]) -> List[ex.Tree]:
+def _rational_seeds(R: ex.Tree) -> List[ex.Tree]:
+    """Rasyonel (Padé) aileler — bağ eğrileri için genel yapısal kalıplar."""
+    a, b, c, d, e = (_c(1.0), _c(1.0), _c(1.0), _c(1.0), _c(1.0))
+    r2 = _f("sq", R)
+    return [
+        # (a + bR)/(1 + cR + dR²)²      → türevi kuvvet yapısıyla aynı aile
+        _f("div", _f("add", a, _f("mul", b, R)),
+             _f("sq", _f("add", _c(1.0), _f("add", _f("mul", c, R), _f("mul", d, r2))))),
+        # (a + bR + cR²)/(1 + dR + eR²)
+        _f("div", _f("add", _f("add", a, _f("mul", b, R)), _f("mul", c, r2)),
+             _f("add", _c(1.0), _f("add", _f("mul", d, R), _f("mul", e, r2)))),
+        # a + b/R + c/R² + d/R³
+        _f("add", _f("add", a, _f("div", b, R)),
+             _f("add", _f("div", c, r2), _f("div", d, _f("mul", r2, R)))),
+        # a/R⁶ − b/R⁴ + c/R² + d
+        _f("add", _f("add", _f("div", a, _f("mul", r2, _f("sq", r2))),
+                     _f("neg", _f("div", b, _f("sq", r2)))),
+             _f("add", _f("div", _c(-1.0), r2), d)),
+    ]
+
+
+def physics_seeds(var_names: List[str], key: str = "") -> List[ex.Tree]:
     """
     ŞEFFAF ön bilgi arketipleri (rapora aynen yazılır).
 
@@ -80,7 +101,8 @@ def physics_seeds(var_names: List[str]) -> List[ex.Tree]:
     """
     n = len(var_names)
     seeds: List[ex.Tree] = []
-    if n == 2:
+    generic2 = n == 2 and tuple(var_names) not in (("Z", "N"), ("R", "Z"))
+    if generic2:
         x0, x1 = _x(0), _x(1)
         seeds += [
             _f("mul", _c(-1.0), _f("div", _f("sq", x0), _f("sq", x1))),          # A·x0²/x1²
@@ -102,6 +124,49 @@ def physics_seeds(var_names: List[str]) -> List[ex.Tree]:
                  _f("div", _f("sq", l), _f("mul", _c(2.0), _f("sq", r)))),
             _f("div", _f("neg", Z), r),     # yalnız Coulomb (l=0 alt durumu)
             _f("add", _f("div", _f("neg", Z), r), _f("div", l, _f("sq", r))),
+        ]
+    if n == 1:                                   # bağ / kuvvet eğrileri: rasyonel aileler
+        seeds += _rational_seeds(_x(0))
+    if n == 2 and tuple(var_names) == ("Z", "N"):    # çok elektronlu atom serisi
+        Z, N = _x(0), _x(1)
+        N2 = _f("sq", N)
+        Z2 = _f("sq", Z)
+        seeds += [
+            # −Z² + (a + bN)·Z + c·N     (izoelektronik 1/Z açılımı kalıbı)
+            _f("add", _f("neg", Z2),
+                 _f("add", _f("mul", _f("add", _c(1.0), _f("mul", _c(1.0), N)), Z),
+                      _f("mul", _c(1.0), N))),
+            # −(N/2)Z² + (a + bN)·Z + c·N + d·N²
+            _f("add", _f("neg", _f("mul", _f("div", N, _c(2.0)), Z2)),
+                 _f("add", _f("mul", _f("add", _c(1.0), _f("mul", _c(1.0), N)), Z),
+                      _f("add", _f("mul", _c(1.0), N), _f("mul", _c(1.0), N2)))),
+            # (a + b/N)Z² + cZ + d      (perdeleme düzeltmesi)
+            _f("add", _f("mul", _f("add", _c(1.0), _f("div", _c(1.0), N)), Z2),
+                 _f("add", _f("mul", _c(1.0), Z), _c(1.0))),
+            # a·Z² + b·ZN + c·N²
+            _f("add", _f("add", _f("mul", _c(1.0), Z2), _f("mul", _c(1.0), _f("mul", Z, N))),
+                 _f("mul", _c(1.0), N2)),
+        ]
+    if n == 2 and tuple(var_names) == ("R", "Z"):     # ölçek yasası: ε = Z²·f(ZR)
+        R, Z = _x(0), _x(1)
+        Z2 = _f("sq", Z)
+        u = _f("mul", Z, R)                            # ölçek değişkeni u = Z·R
+        u2 = _f("sq", u)
+        seeds += [
+            # Z²·(a + b·u)/(1 + c·u)      → u→∞ limiti sabit (fiziksel)
+            _f("mul", Z2, _f("div", _f("add", _c(1.0), _f("mul", _c(1.0), u)),
+                              _f("add", _c(1.0), _f("mul", _c(1.0), u)))),
+            # Z²·(a + b·u + c·u²)/(1 + d·u + e·u²)
+            _f("mul", Z2, _f("div", _f("add", _f("add", _c(1.0), _f("mul", _c(1.0), u)),
+                                        _f("mul", _c(1.0), u2)),
+                              _f("add", _f("add", _c(1.0), _f("mul", _c(1.0), u)),
+                                   _f("mul", _c(1.0), u2)))),
+            # −Z²/2 + a·Z/R   (hidrojenik limit + Coulomb kuyruğu)
+            _f("add", _f("neg", _f("mul", _f("div", _c(1.0), _c(2.0)), Z2)),
+                 _f("mul", _c(1.0), _f("div", Z, R))),
+            # a·Z² + b·Z/R + c
+            _f("add", _f("add", _f("mul", _c(-1.0), Z2), _f("mul", _c(1.0), _f("div", Z, R))),
+                 _c(1.0)),
         ]
     if n == 2 and var_names and var_names[1] in ("α", "a", "alpha"):
         Z, A = _x(0), _x(1)
@@ -517,7 +582,7 @@ def run(bench, cfg: Optional[EAConfig] = None,
 
     seeds: List[ex.Tree] = []
     if cfg.physics_seeded and not cfg.blind_mode:
-        seeds = physics_seeds(bench.var_names)
+        seeds = physics_seeds(bench.var_names, key=bench.key)
 
     islands: List[List[Individual]] = []
     for isl in range(cfg.islands):
@@ -670,6 +735,7 @@ def run(bench, cfg: Optional[EAConfig] = None,
     hall.sort(key=lambda r: (not r["verified"], r["score_key"], r["cost"], r["loss_val"]))
 
     champ = hall[0] if hall else None
+    trees_by_formula = {ex.to_pretty(t, bench.var_names): t for t in unique}
     return {
         "bench_key": bench.key,
         "bench_title": bench.title,
@@ -682,6 +748,7 @@ def run(bench, cfg: Optional[EAConfig] = None,
         "history": history,
         "hall_of_fame": hall,
         "champion": champ,
+        "champion_tree": (champ and trees_by_formula.get(champ["formula"])) or None,
         "null_barrier": bench.null_barrier,
         "seeds_used": [ex.to_pretty(s, bench.var_names) for s in seeds] if seeds else [],
         "physics_seeded": cfg.physics_seeded and not cfg.blind_mode,

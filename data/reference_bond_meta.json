@@ -1,0 +1,64 @@
+{
+  "iki_elektron_1Z_acilim_sapmasi": {
+    "Z=2": 0.01583038836358821,
+    "Z=3": 0.006363593575038195,
+    "Z=4": 0.0034193647683911236,
+    "Z=5": 0.002130759850518021,
+    "Z=6": 0.001456727072562315,
+    "Z=7": 0.0011130457687313082,
+    "Z=8": 0.0008082978389480376,
+    "Z=9": 0.0006377598163100617,
+    "Z=10": 0.000511105882040528
+  },
+  "iki_elektron_1Z_acilim_notu": "Kapalı kabuk 2e serisi, HF limitinin analitik 1/Z açılımı E = -Z² + (5/8)Z - 0.1576664 + O(1/Z) ile karşılaştırılır. Sapma Z büyüdükçe küçülür (Z=2: 1.6e-2 → Z=10: 5.1e-4); bu, açılımın 1/Z kesilmesinden kaynaklanır. Taban hatasının üst sınırı: Z=10'da ≤5e-4 bağıl.",
+  "checksum_sha256": "26a1b27d21a18ebed3c8ee5d4cbf2dbeaf69c09fc3a1997aa094223edf1e6056",
+  "n_h2": 18,
+  "n_h2plus": 30,
+  "n_atoms": 24,
+  "H2_E_lit_HF": {
+    "calc": -1.127990836629738,
+    "lit": -1.133629,
+    "dev": 0.005638163370262017
+  },
+  "H2_R_e": {
+    "calc": 1.4,
+    "lit": 1.4011,
+    "dev": 0.001100000000000101
+  },
+  "H2_D_e_eV": {
+    "calc": 3.5063468717375947,
+    "lit": 3.636,
+    "dev": 0.12965312826240538,
+    "note": "HF/RHF ayrışma limiti: 2·E_H (aynı taban). Tam (BO) değer 4.478 eV; RHF statik korelasyonu içermediği için R≳3 a0'da eğri yapay olarak yükselir — veri R≤3.0 ile sınırlandı."
+  },
+  "H2_k_au": {
+    "calc": 0.3947910738480648,
+    "lit": 0.3694,
+    "dev": 0.02539107384806477
+  },
+  "H2_omega_cm": {
+    "calc": 4551.228012526985,
+    "lit": 4401.2,
+    "dev": 150.02801252698555
+  },
+  "H2plus_E_R2": {
+    "calc": -0.590714226862695,
+    "lit": -0.602634,
+    "dev": 0.011919773137304968
+  },
+  "H2plus_scaling_residual": 7.27774858093007e-15,
+  "atom_HF_checks": {
+    "E(2,2)": -2.8616369116562437,
+    "E(4,4)": -14.570718560947466,
+    "E(3,3)": -7.397535208254153
+  },
+  "atom_lit": {
+    "E(He,2)": -2.8616799,
+    "E(Li,3)": -7.4327269,
+    "E(Be,4)": -14.5729963,
+    "E(Li+,3)": -7.2364152,
+    "E(Be2+,4)": -13.6112957
+  },
+  "max_virial_residual_h2": 2.1189766941303514,
+  "note": "Referans: GTO/HF ve tek-elektron tam çözüm. Kapalı form kullanılmadı. Teşhis karşılaştırmaları (lit.) yalnızca doğrulama içindir."
+}

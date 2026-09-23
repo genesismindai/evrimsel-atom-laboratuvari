@@ -14,5 +14,21 @@
  "enerji|pop140|gen10|seed1002": 0.9281798047228681,
  "ters_yaricap|pop140|gen10|seed1002": 1.0172039814636307,
  "etkin_potansiyel|pop140|gen10|seed1002": 0.9973655473454217,
- "yukawa|pop140|gen10|seed1002": 0.6751543204730621
+ "yukawa|pop140|gen10|seed1002": 0.6751543204730621,
+ "enerji|pop140|gen10|seed12": 0.9197265771538612,
+ "ters_yaricap|pop140|gen10|seed12": 1.0426831531554441,
+ "etkin_potansiyel|pop140|gen10|seed12": 0.9962687656649963,
+ "yukawa|pop140|gen10|seed12": 0.5952735179522511,
+ "cok_elektron|pop140|gen10|seed12": 0.21605961128101875,
+ "bag_h2|pop140|gen10|seed12": 0.13993833944509088,
+ "kuvvet_h2|pop140|gen10|seed12": 0.8727380395581468,
+ "h2plus_olcek|pop140|gen10|seed12": 0.4756158002608739,
+ "enerji|pop140|gen10|seed13": 0.9197265771538612,
+ "ters_yaricap|pop140|gen10|seed13": 1.0426831531554441,
+ "etkin_potansiyel|pop140|gen10|seed13": 0.9964751624494055,
+ "yukawa|pop140|gen10|seed13": 0.657637283963923,
+ "cok_elektron|pop140|gen10|seed13": 0.3507077885551532,
+ "bag_h2|pop140|gen10|seed13": 0.1399383394457244,
+ "kuvvet_h2|pop140|gen10|seed13": 0.928893731775567,
+ "h2plus_olcek|pop140|gen10|seed13": 0.4924270455288561
 }

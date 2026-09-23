@@ -15,6 +15,8 @@ keşfeden ve keşfi **trilyon ölçeğinde atom değerlendirmesine** ölçekleye
 | Uydurmanın fark edilmemesi | **Etiket-karıştırma (permütasyon) bariyeri**: aynı mimari fiziksel anlamı olmayan karışık etiketlerde çalıştırılır; elde edilen en iyi hatanın belirgin altına inmeyen aday elenir |
 | Sızıntı | Eğitim / doğrulama / **sınav** kümeleri rejimlere göre ayrıdır; sınav kümesi yalnızca nihai raporda bir kez ölçülür |
 | Yalnızca eğri uydurma | **Hellmann–Feynman** (dE/dZ = −⟨1/r⟩) ve **virial/eylem durağanlığı** (E = −(Z/2)⟨1/r⟩, 2⟨T⟩+⟨V⟩→0) bağımsız sayısal referansa karşı sınanır |
+| Moleküler bağda "eğri uydurma" | **F9 türev tutarlılığı**: kuvvet ve enerji İKİ AYRI evrim koşusunda bağımsız keşfedilir; kuvvet adayının −dE/dR'si öteki keşfin (enerji şampiyonunun) türeviyle karşılaştırılır — yalnız mekanikten gelir, uydurmayla geçilemez |
+| Ölçek yasasını "tesadüfen" tutturmak | F2 filtresi eşzamanlı dönüşümü (R→R/λ, Z→λZ) ve asimptotik üssü (Z→∞ için 2) sınar; yasa **veriden bağımsız** olarak makine hassasiyetinde doğrulanır (7.3×10⁻¹⁵) |
 | Aşırı uyum (gereksiz basamaklar) | Uygunluk fonksiyonu **ölçüm gürültüsü tabanı** ile sınırlanır; hata tabanın altına indiğinde seçim yalnızca **daha ucuz** formu arar (MDL) |
 | Pahalı/güvenilmez formüller | F1 filtresi transandantal operatörleri (exp/log/trig) ürün formüllerden tamamen eler; maliyet modeli işlem birimleriyle ölçülür |
 | Donanım hasarı / bellek patlaması | Değer sınırları, NaN/inf denetimi, |sabit|≤10⁶, süre bütçesi (1000 nokta ≤ 400 µs); ölçeklendirme **öbek akışıyla** yapılır, bellek O(öbek) kalır |
@@ -35,8 +37,12 @@ keşfeden ve keşfi **trilyon ölçeğinde atom değerlendirmesine** ölçekleye
 atomic_ea/
   physics.py      sayısal referans çözücü (sonlu farklar özdeğer) + öz-testler
   expression.py   sembolik ağaçlar, güvenli derleme, FLOP maliyet modeli
-  filters.py      filtre zinciri F1–F8, kaskad değerlendirme, uygunluk (gürültü tabanlı)
+  filters.py      filtre zinciri F1–F9, kaskad değerlendirme, uygunluk (gürültü tabanlı)
   benchmarks.py   veri kümeleri (train/val/test) ve fizik denetimleri
+  gto.py          Gauss tabanlı HF çözücü (Boys F0, örtüşme/kinetik/nükleer/ERI, damped SCF,
+                  dondurulmuş çekirdek Li-benzeri, H2 ve H2+ enerji eğrileri) + öz-testler
+  hbond.py        çok elektronlu atom serisi, H2 bağ eğrisi + kuvvet alanı, H2+ ölçek yasası
+                  referansları ve dört yeni benchmark (bkz. "Kapsam")
   evolution.py    ada modeli EA, mutasyon/çaprazlama, Gauss–Newton sabit ayarı,
                   MDL sabit yuvarlama, arşiv, onur listesi, null kalibrasyonu
   throughput.py   trilyon ölçeği muhasebesi (ölçüm + projeksiyon + pahalı yol karşılaştırması)
@@ -52,6 +58,19 @@ web/*.html        panel, yöntem, yayın kaydı sayfaları
 data/             referans veri, koşu kayıtları, canlı ilerleme, yayın kaydı
 reports/          insan-okur raporlar (md + html)
 ```
+
+## Kapsam: tek elektronlu atom → çok elektronlu atom, bağ, kuvvet alanı
+
+| benchmark | hedef | referans |
+|---|---|---|
+| `enerji`, `ters_yaricap`, `etkin_potansiyel`, `yukawa` | hidrojenik aile (kapalı form) | sonlu farklar Schrödinger çözücüsü |
+| `cok_elektron` | E(Z,N) — kapalı kabuk 2e/4e serileri, Z≤10 | kendi GTO/HF çözücümüz (üsler varyasyonel optimize; 2e serisi analitik 1/Z açılımına karşı ≤5×10⁻⁴ @Z=10) |
+| `bag_h2` | E_H2(R) kimyasal bağ eğrisi | iki merkezli GTO/HF |
+| `kuvvet_h2` | F(R) = −dE/dR | bağımsız merkezi fark türevi |
+| `h2plus_olcek` | ε(R,Z) elektronik enerji + **tam ölçek yasası** | ε(R,Z) = Z²·f(ZR); özdeşlik 7.3×10⁻¹⁵ doğrulukla sınanır |
+
+Açıkça belirtilen sınırlar: H2 eğrisi R≤3 a₀ (RHF ayrışma kuyruğu yapay yükselir); Li-benzeri açık
+kabuk (N=3) serisi taban sınırı nedeniyle benchmark'a alınmadı; He/Be literatür değerleri yalnız teşhis.
 
 ## Kalıcı yayın (sunucu düşse de site ayakta)
 

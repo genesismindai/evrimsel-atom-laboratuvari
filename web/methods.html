@@ -42,14 +42,18 @@ imkânsız) ve kabuk formunun “numerolojik tesadüf” olarak veriye uydurulma
 <table>
 <tr><th>#</th><th>filtre</th><th>ölçüt</th><th>tür</th></tr>
 <tr><td>F1</td><td>ucuz katman</td><td>exp/log/trig/tanh/gerçel kuvvet yasak; yalnız +,−,×,÷ ve küçük tamsayı kuvvetleri</td><td>eleme</td></tr>
-<tr><td>F2</td><td>ölçek simetrisi (boyut analizi)</td><td>E(λZ,n)=λ²E(Z,n) — ölçek yasası veriden bağımsız kurulur, aday uymalı (sapma ≤ 5%)</td><td>eleme</td></tr>
+<tr><td>F2</td><td>ölçek simetrisi (boyut analizi)</td><td>Üç kip: (i) <code>E(λx)=λᵖE(x)</code>, (ii) <b>eşzamanlı</b> dönüşüm <code>R→R/λ, Z→λZ</code> (iki değişken birlikte), (iii) <b>asimptotik üs</b> <code>d log|y|/d log x → p</code> (ör. Z→∞ için 2)</td><td>eleme</td></tr>
 <tr><td>F3</td><td>donanım güvenliği</td><td>NaN/inf yok, |sabit|≤10⁶, |değer|≤10¹², NaN’a açık gerçel kuvvet yok, 1000 nokta ≤ 400 µs</td><td>eleme</td></tr>
 <tr><td>F4</td><td>numeroloji bariyeri</td><td>aynı mimari ETİKETLERİ KARIŞTIRILMIŞ veride çalıştırılır; en iyi hatanın 5 katı altına inmeyen aday elenir</td><td>eleme</td></tr>
 <tr><td>F5</td><td>Hellmann–Feynman</td><td>dE/dZ = −⟨1/r⟩ (bağımsız sayısal referansa karşı, ≤1%)</td><td>doğrulama</td></tr>
 <tr><td>F6</td><td>virial / eylem durağanlığı</td><td>E = −(Z/2)⟨1/r⟩ ⇒ eylem ilkesi kısıtı (≤1%)</td><td>doğrulama</td></tr>
 <tr><td>F7</td><td>ekstrapolasyon</td><td>eğitim bölgesinin DIŞINDAKİ doğrulama rejiminde ≤ 4×tolerans</td><td>doğrulama</td></tr>
 <tr><td>F8</td><td>referans güvenilirliği</td><td>sayısal çözücünün göreli eylem artığı &lt; 1%</td><td>doğrulama</td></tr>
+<tr><td>F9</td><td>türev tutarlılığı (kuvvet = −dE/dR)</td><td>İki yol: (a) adayın sayısal türevi BAĞIMSIZ hesaplanan kuvvet referansına uymalı;
+      (b) iki AYRI keşif bağlanır: kuvvet adayı ≈ −d/dR(enerji şampiyonu). Yalnız eğri uydurarak sağlanamaz (≤3%)</td><td>doğrulama</td></tr>
 </table>
+<p class="small">F9, “hile yok” ilkesinin en güçlü testidir: enerji ve kuvvet iki bağımsız evrim koşusunda ayrı ayrı
+keşfedilir; aralarındaki ilişki yalnızca mekanikten (Hellmann–Feynman) gelir. Eğri uyduran bir aday bu testi geçemez.</p>
 <p class="warn">Sınav (test) kümesi hiçbir filtrede ve hiçbir seçim adımında kullanılmaz; yalnızca nihai raporda bir kez ölçülür.</p>
 
 <h2>3. Uygunluk fonksiyonu (neden “en ucuz”)</h2>
@@ -77,7 +81,48 @@ süre/işlem/enerji projeksiyonu yapılır ve pahalı sayısal çözücüye gör
 <p class="warn">Süreler doğrusal dışdeğerlemedir; enerji (joule) tahminleri ilan edilen J/işlem varsayımına dayanır.
 Gerçek koşu, beyan edilen atom sayısında (varsayılan 10⁸) yapılır ve ölçülür.</p>
 
-<h2>6. Yeniden üretilebilirlik</h2>
+<h2>6. Kimyasal bağ, kuvvet alanı ve çok elektronlu atom</h2>
+<p>Bu dört benchmark, çok elektronlu elektron yapısını ve moleküler bağlanmayı kapsar. Referanslar
+<b>bağımsız olarak kendi GTO/HF çözücümüzle</b> üretilir (Beys tipi kısıtlama yok: Boys F₀, örtüşme,
+kinetik, nükleer çekim ve 8-katlı simetrili ERI integralleri + damped SCF).</p>
+<table>
+<tr><th>benchmark</th><th>hedef</th><th>eğitim / doğrulama / sınav</th><th>tolerans</th></tr>
+<tr><td><code>cok_elektron</code></td><td>E(Z,N) — kapalı kabuk 2e ve 4e serileri, Z≤10 (taban üsleri her noktada varyasyonel optimize)</td>
+    <td>Z≤5 · Z=6,7 (her iki N) · Z≥8</td><td>5%</td></tr>
+<tr><td><code>bag_h2</code></td><td>E<sub>H₂</sub>(R) — iki merkezli GTO/HF bağ eğrisi, R≤3 a₀</td>
+    <td>R=0.8–1.3 (denge) · 0.6–2.2 dışı · R&gt;2.2 (kuyruk)</td><td>0.5%</td></tr>
+<tr><td><code>kuvvet_h2</code></td><td>F(R) = −dE/dR — merkezi fark türevi (h=3·10⁻³ a₀), bağımsız</td>
+    <td>aynı bölme</td><td>2%</td></tr>
+<tr><td><code>h2plus_olcek</code></td><td>ε(R,Z) = E<sub>BO</sub> − Z²/R (elektronik enerji), tek elektronlu iki merkez</td>
+    <td>ölçek değişkeni u=Z·R üzerinden: u≤4 · 4&lt;u≤8 · u&gt;8</td><td>5%</td></tr>
+</table>
+
+<h3>Ölçek yasası (neden elektronik enerji?)</h3>
+<p>Tek elektronlu iki merkezli sistemde çekirdek yükleri Z ve uzaklık R için koordinat ölçeklemesi
+<code>r→r/Z</code> şunu verir: <b>E<sub>tot</sub>(R,Z) = Z²·E<sub>tot</sub>(ZR,1) + Z(Z−1)/R</b>.
+Nükleer itme bilinen klasik bir terim olduğu için onu çıkarıp <b>elektronik enerjiyi</b> hedef alırsak yasa saf
+biçimde geçerlidir: <b>ε(R,Z) = Z²·f(Z·R)</b>. Bu yasa veriden bağımsız olarak doğrulanır: üsler
+<code>α→α/Z²</code> ile ölçeklendiğinde iki hesap <b>7.28×10⁻¹⁵</b> bağıl farkla çakışır (makine hassasiyeti).</p>
+
+<h3>Referans kalitesi (dürüstlük tablosu)</h3>
+<table>
+<tr><th>ölçüt</th><th>değer</th><th>anlamı</th></tr>
+<tr><td>He (Z=2,N=2) vs HF limiti</td><td>Δ = 4.3×10⁻⁵</td><td>5+4 primitifli taban, üsler optimizasyonlu</td></tr>
+<tr><td>Be (Z=4,N=4) vs HF limiti</td><td>Δ = 2.3×10⁻³</td><td>aynı taban ailesi; 4 elektronlu seride taban etkisi büyür</td></tr>
+<tr><td>2e serisi vs analitik 1/Z açılımı<br><code>E=−Z²+(5/8)Z−0.1576664+O(1/Z)</code></td><td>1.6×10⁻² (Z=2) → 5.1×10⁻⁴ (Z=10)</td><td><b>literatürden bağımsız</b> analitik kontrol; sapma açılımın 1/Z kesilmesinden gelir, Z=10'da taban hatasının üst sınırı ≤5×10⁻⁴</td></tr>
+<tr><td>H₂ tabanı</td><td>E(1.4) = −1.127991 (HF limiti −1.133629, Δ 5.6×10⁻³)</td><td>5 fonksiyonlu taban; bağ enerjisi D_e = 3.51 eV (fiziksel ayrışma limiti 2·E_H ile)</td></tr>
+<tr><td>H₂+ ölçek özdeşliği</td><td>7.3×10⁻¹⁵</td><td>ölçek yasası sayısal olarak tam</td></tr>
+<tr><td>Kuvvet verisi iç tutarlılığı</td><td>~8×10⁻³</td><td>düzgün bir Padé fitinin analitik türevi ile merkezi fark kuvveti arasındaki fark; F9 eşiği (3%) bunun üzerinde seçildi</td></tr>
+</table>
+<p class="warn"><b>Açıkça belirtilen sınırlar:</b> (1) H₂ eğrisi R≤3 a₀ ile sınırlıdır — RHF statik korelasyonu
+içermediği için R≳3 a₀’da ayrışma kuyruğu yapay olarak yükselir; sahte bir serbestlik uydurmamak için veri kesildi.
+(2) Li-benzeri açık kabuk (N=3) serisi dondurulmuş çekirdek tabanı nedeniyle ~5×10⁻³ bağıl doğrulukta kalır ve
+<b>benchmark’a alınmadı</b>; değerler referans dosyasında dürüstlük notuyla durur.
+(3) He/Be literatür değerleri yalnızca <i>teşhis</i> amaçlıdır; hiçbir filtre veya seçim adımında kullanılmaz.</p>
+<p>Bu problemlerin bilinen kapalı formu yoktur; bulunan formüller <b>yasa adayı</b> olarak etiketlenir ve
+bağımsız kısıtlarla (ölçek simetrisi, türev tutarlılığı, numeroloji bariyeri) doğrulanır.</p>
+
+<h2>7. Yeniden üretilebilirlik</h2>
 <ul>
   <li>Her koşu: tohum (seed), yapılandırma, referans veri sha256’sı ve tüm formüllerle birlikte
       <code>data/runs/&lt;id&gt;.json</code> olarak kaydedilir.</li>

@@ -73,6 +73,7 @@ class Engine:
         self.throughput: Optional[dict] = None
         self.self_test: Optional[dict] = None
         self.error: Optional[str] = None
+        self.best_trees: Dict[str, object] = {}      # eş keşif çapraz kontrolü için (yalnız bellekte)
 
     # ---------- yayın
     def log(self, msg: str) -> None:
@@ -323,8 +324,17 @@ def run_all(engine: Engine, preset: str = "hizli", seed: int = 1,
                     engine.bench_status[idx]["archive"] = d.get("archive")
                     engine._publish({"type": "gen", "bench": b.key, **d})
 
+            # ---- eş keşif çapraz kontrolü: iki bağımsız keşif fizik yasasıyla bağlanır
+            eng = engine.best_trees.get("bag_h2")
+            if b.key == "kuvvet_h2" and eng is not None:
+                b.cross_checks = {"energy_tree": eng}
+                engine.log("  çapraz kontrol: kuvvet adayının türevi, bag_h2 şampiyonunun "
+                           "enerjisiyle karşılaştırılacak (F9)")
+            elif b.key == "bag_h2" and b.cross_checks.get("force_tree") is not None:
+                pass
             t0 = time.time()
             res = ev.run(b, cfg, progress=progress, should_stop=lambda: engine.stop_flag)
+            engine.best_trees[b.key] = res.pop("champion_tree", None)
             res["wall_before_report_s"] = round(time.time() - t0, 2)
             champ = res.get("champion")
             engine.results[b.key] = res
@@ -503,6 +513,11 @@ def write_report(record: dict) -> tuple:
         A(f"- Hatalar (göreli RMSE): eğitim={_f(c.get('loss_train'))}, doğrulama={_f(c.get('loss_val'))}, "
           f"**sınav={_f(c.get('loss_test'))}**, en kötü bağıl sınav hatası={_f(c.get('max_rel_err_test'))}")
         A(f"- Doğrulandı mı: **{c.get('verified')}**")
+        if c.get("generalization_ok") is False:
+            A("")
+            A("> ⚠️ **Genelleme uyarısı:** sınav (ekstrapolasyon) hatası toleransın 5 katından "
+              "büyük. Formül eğitim/doğrulama rejiminde geçerli sayılır, **sınav rejiminde "
+              "değil**; sınav hatası yukarıda dürüstçe raporlanmıştır.")
         A("")
         A("| filtre | grup | sonuç | ayrıntı |")
         A("|---|---|---|---|")

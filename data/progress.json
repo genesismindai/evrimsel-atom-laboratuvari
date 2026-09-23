@@ -298,7 +298,7 @@
      "cost": 6.0,
      "nodes": 7,
      "formula": "-0.5·Z²/n²",
-     "archive": 6
+     "archive": 7
     },
     {
      "gen": 3,
@@ -309,7 +309,7 @@
      "cost": 6.0,
      "nodes": 7,
      "formula": "-0.5·Z²/n²",
-     "archive": 6
+     "archive": 8
     },
     {
      "gen": 4,
@@ -320,7 +320,7 @@
      "cost": 6.0,
      "nodes": 7,
      "formula": "-0.5·Z²/n²",
-     "archive": 7
+     "archive": 8
     },
     {
      "gen": 5,
@@ -665,16 +665,16 @@
     }
    ],
    "champion": {
-    "formula": "-0.5·Z²/n²",
-    "python": "(-0.5 * ((Z**2) / (n**2)))",
-    "tree": "('f', 'mul', ('c', -0.5), ('f', 'div', ('f', 'sq', ('x', 0)), ('f', 'sq', ('x', 1))))",
-    "cost": 6.0,
-    "nodes": 7,
+    "formula": "-0.5·(Z/n)²",
+    "python": "(-0.5 * ((Z / n)**2))",
+    "tree": "('f', 'mul', ('c', -0.5), ('f', 'sq', ('f', 'div', ('x', 0), ('x', 1))))",
+    "cost": 5.0,
+    "nodes": 6,
     "depth": 4,
     "eval_us": 18.1,
     "loss_train": 5.038196274891228e-05,
     "loss_val": 9.625389522105586e-05,
-    "loss_test": 0.00032377263009747534,
+    "loss_test": 0.00032377263009747545,
     "max_rel_err_test": 0.000399840127893551,
     "ok": true,
     "verified": true,
@@ -720,7 +720,7 @@
       "name": "Hellmann-Feynman (dE/dZ = -<1/r>)",
       "group": "DOĞRULAMA",
       "passed": true,
-      "value": 0.0008073269462831923,
+      "value": 0.0008073269462826756,
       "limit": 0.01,
       "detail": "göreli hata 8.073e-04"
      },
@@ -729,7 +729,7 @@
       "name": "virial / eylem durağanlığı E=-(Z/2)<1/r>",
       "group": "DOĞRULAMA",
       "passed": true,
-      "value": 0.0008084706930745826,
+      "value": 0.0008084706930745827,
       "limit": 0.01,
       "detail": "göreli hata 8.085e-04"
      },
@@ -762,9 +762,191 @@
      }
     ],
     "failures": [],
-    "score_key": -3.668255718621733
+    "score_key": -3.6725414329074475
    },
    "hall_of_fame": [
+    {
+     "formula": "-0.5·(Z/n)²",
+     "python": "(-0.5 * ((Z / n)**2))",
+     "tree": "('f', 'mul', ('c', -0.5), ('f', 'sq', ('f', 'div', ('x', 0), ('x', 1))))",
+     "cost": 5.0,
+     "nodes": 6,
+     "depth": 4,
+     "eval_us": 13.4,
+     "loss_train": 5.038196274891228e-05,
+     "loss_val": 9.625389522105586e-05,
+     "loss_test": 0.00032377263009747545,
+     "max_rel_err_test": 0.000399840127893551,
+     "ok": true,
+     "verified": true,
+     "filters": [
+      {
+       "id": "F1",
+       "name": "ucuz katman (transandantal operatör yasağı)",
+       "group": "ELEME",
+       "passed": true,
+       "value": 0.0,
+       "limit": null,
+       "detail": "yasaklı operatör yok"
+      },
+      {
+       "id": "F2",
+       "name": "ölçek simetrisi (boyut analizi)",
+       "group": "ELEME",
+       "passed": true,
+       "value": 3.3306690738754696e-16,
+       "limit": 0.05,
+       "detail": "Δlog/Δlog(Z)≈2.0: sapma 3.33e-16"
+      },
+      {
+       "id": "F3",
+       "name": "gürbüzlük + donanım güvenliği",
+       "group": "ELEME",
+       "passed": true,
+       "value": 13.41500001217355,
+       "limit": 400.0,
+       "detail": "güvenli"
+      },
+      {
+       "id": "F4",
+       "name": "numeroloji bariyeri (null test)",
+       "group": "ELEME",
+       "passed": true,
+       "value": 9.625389522105586e-05,
+       "limit": 0.16816130782771524,
+       "detail": "aday 9.625e-05 vs bariyer 1.682e-01 (karışık etiket en iyisi 8.408e-01 / 5)"
+      },
+      {
+       "id": "F5",
+       "name": "Hellmann-Feynman (dE/dZ = -<1/r>)",
+       "group": "DOĞRULAMA",
+       "passed": true,
+       "value": 0.0008073269462826756,
+       "limit": 0.01,
+       "detail": "göreli hata 8.073e-04"
+      },
+      {
+       "id": "F6",
+       "name": "virial / eylem durağanlığı E=-(Z/2)<1/r>",
+       "group": "DOĞRULAMA",
+       "passed": true,
+       "value": 0.0008084706930745827,
+       "limit": 0.01,
+       "detail": "göreli hata 8.085e-04"
+      },
+      {
+       "id": "F7",
+       "name": "ekstrapolasyon (eğitim dışı rejim)",
+       "group": "DOĞRULAMA",
+       "passed": true,
+       "value": 9.625389522105586e-05,
+       "limit": 0.004,
+       "detail": "doğrulama hatası 9.625e-05 ≤ 4.0e-03"
+      },
+      {
+       "id": "F8",
+       "name": "referans eylem artığı |2<T>+<V>|/|E|",
+       "group": "DOĞRULAMA",
+       "passed": true,
+       "value": 0.005642043654492092,
+       "limit": 0.01,
+       "detail": "sayısal referans göreli artığı 5.64e-03"
+      }
+     ],
+     "failures": [],
+     "score_key": -3.6725414329074475
+    },
+    {
+     "formula": "(Z/n)²·-0.5",
+     "python": "(((Z / n)**2) * -0.5)",
+     "tree": "('f', 'mul', ('f', 'sq', ('f', 'div', ('x', 0), ('x', 1))), ('c', -0.5))",
+     "cost": 5.0,
+     "nodes": 6,
+     "depth": 4,
+     "eval_us": 14.7,
+     "loss_train": 5.038196274891228e-05,
+     "loss_val": 9.625389522105586e-05,
+     "loss_test": 0.00032377263009747545,
+     "max_rel_err_test": 0.000399840127893551,
+     "ok": true,
+     "verified": true,
+     "filters": [
+      {
+       "id": "F1",
+       "name": "ucuz katman (transandantal operatör yasağı)",
+       "group": "ELEME",
+       "passed": true,
+       "value": 0.0,
+       "limit": null,
+       "detail": "yasaklı operatör yok"
+      },
+      {
+       "id": "F2",
+       "name": "ölçek simetrisi (boyut analizi)",
+       "group": "ELEME",
+       "passed": true,
+       "value": 3.3306690738754696e-16,
+       "limit": 0.05,
+       "detail": "Δlog/Δlog(Z)≈2.0: sapma 3.33e-16"
+      },
+      {
+       "id": "F3",
+       "name": "gürbüzlük + donanım güvenliği",
+       "group": "ELEME",
+       "passed": true,
+       "value": 14.687999993157064,
+       "limit": 400.0,
+       "detail": "güvenli"
+      },
+      {
+       "id": "F4",
+       "name": "numeroloji bariyeri (null test)",
+       "group": "ELEME",
+       "passed": true,
+       "value": 9.625389522105586e-05,
+       "limit": 0.16816130782771524,
+       "detail": "aday 9.625e-05 vs bariyer 1.682e-01 (karışık etiket en iyisi 8.408e-01 / 5)"
+      },
+      {
+       "id": "F5",
+       "name": "Hellmann-Feynman (dE/dZ = -<1/r>)",
+       "group": "DOĞRULAMA",
+       "passed": true,
+       "value": 0.0008073269462826756,
+       "limit": 0.01,
+       "detail": "göreli hata 8.073e-04"
+      },
+      {
+       "id": "F6",
+       "name": "virial / eylem durağanlığı E=-(Z/2)<1/r>",
+       "group": "DOĞRULAMA",
+       "passed": true,
+       "value": 0.0008084706930745827,
+       "limit": 0.01,
+       "detail": "göreli hata 8.085e-04"
+      },
+      {
+       "id": "F7",
+       "name": "ekstrapolasyon (eğitim dışı rejim)",
+       "group": "DOĞRULAMA",
+       "passed": true,
+       "value": 9.625389522105586e-05,
+       "limit": 0.004,
+       "detail": "doğrulama hatası 9.625e-05 ≤ 4.0e-03"
+      },
+      {
+       "id": "F8",
+       "name": "referans eylem artığı |2<T>+<V>|/|E|",
+       "group": "DOĞRULAMA",
+       "passed": true,
+       "value": 0.005642043654492092,
+       "limit": 0.01,
+       "detail": "sayısal referans göreli artığı 5.64e-03"
+      }
+     ],
+     "failures": [],
+     "score_key": -3.6725414329074475
+    },
     {
      "formula": "-0.5·Z²/n²",
      "python": "(-0.5 * ((Z**2) / (n**2)))",
@@ -1569,9 +1751,9 @@
    "known_limits": {
     "note": "Yalnızca keşif sonrası teşhis; arama/seçim bu bilgiyi kullanmaz.",
     "limit": "E = −Z²/(2n²) Hartree (Rydberg)",
-    "max_rel_deviation": 0.0,
-    "mean_rel_deviation": 0.0,
-    "champion_constants": "-0.5·Z²/n²"
+    "max_rel_deviation": 3.289261117762738e-16,
+    "mean_rel_deviation": 3.8376885947497586e-17,
+    "champion_constants": "-0.5·(Z/n)²"
    }
   },
   "ters_yaricap": {
@@ -1604,7 +1786,7 @@
      "cost": 4.0,
      "nodes": 4,
      "formula": "Z/n²",
-     "archive": 5
+     "archive": 6
     },
     {
      "gen": 2,
@@ -1626,7 +1808,7 @@
      "cost": 4.0,
      "nodes": 4,
      "formula": "Z/n²",
-     "archive": 6
+     "archive": 7
     },
     {
      "gen": 4,
@@ -1659,7 +1841,7 @@
      "cost": 4.0,
      "nodes": 4,
      "formula": "Z/n²",
-     "archive": 8
+     "archive": 7
     },
     {
      "gen": 7,
@@ -1692,7 +1874,7 @@
      "cost": 4.0,
      "nodes": 4,
      "formula": "Z/n²",
-     "archive": 10
+     "archive": 9
     },
     {
      "gen": 10,
@@ -1714,7 +1896,7 @@
      "cost": 4.0,
      "nodes": 4,
      "formula": "Z/n²",
-     "archive": 10
+     "archive": 11
     },
     {
      "gen": 12,
@@ -3510,7 +3692,7 @@
      "loss_test": 0.0,
      "max_rel_err_test": 0.0,
      "ok": true,
-     "verified": true,
+     "verified": false,
      "filters": [
       {
        "id": "F1",
@@ -3570,10 +3752,10 @@
        "id": "F7",
        "name": "ekstrapolasyon (eğitim dışı rejim)",
        "group": "DOĞRULAMA",
-       "passed": true,
-       "value": 0.0,
+       "passed": false,
+       "value": 0.07988388553313595,
        "limit": 0.008,
-       "detail": "doğrulama hatası 0.000e+00 ≤ 8.0e-03"
+       "detail": "doğrulama hatası 7.988e-02 ≤ 8.0e-03"
       },
       {
        "id": "F8",
@@ -3594,8 +3776,10 @@
        "detail": "uygulanamaz"
       }
      ],
-     "failures": [],
-     "score_key": -8.9325
+     "failures": [
+      "F7"
+     ],
+     "score_key": -1.2737262961721008
     },
     {
      "formula": "−(0.5·l) + l·(l + 1)/(2·r²)",
@@ -3875,9 +4059,9 @@
        "name": "ekstrapolasyon (eğitim dışı rejim)",
        "group": "DOĞRULAMA",
        "passed": false,
-       "value": 0.09797962763450249,
+       "value": 1.3666642779512919,
        "limit": 0.008,
-       "detail": "doğrulama hatası 9.798e-02 ≤ 8.0e-03"
+       "detail": "doğrulama hatası 1.367e+00 ≤ 8.0e-03"
       },
       {
        "id": "F8",
@@ -4081,7 +4265,7 @@
        "passed": false,
        "value": 0.10700025860806513,
        "limit": 0.008,
-       "detail": "doğrulama hatası 1.070e-01 ≤ 8.0e-03"
+       "detail": "doğrulama hatası 9.923e-01 ≤ 8.0e-03"
       },
       {
        "id": "F8",
@@ -4103,6 +4287,7 @@
       }
      ],
      "failures": [
+      "F4",
       "F7"
      ],
      "score_key": -1.1567985923157356
@@ -4253,46 +4438,46 @@
     {
      "gen": 2,
      "gen_": 280,
-     "best_score": -3.506289298480405,
+     "best_score": -3.500289298480405,
      "best_train_loss": 0.00029696871620325956,
      "best_val_loss": 0.0007013187559734599,
-     "cost": 7.0,
+     "cost": 9.0,
      "nodes": 14,
-     "formula": "−(0.5·Z²) + Z·α + -0.666667·α²",
-     "archive": 7
+     "formula": "−(Z²/2) + Z·α + -0.666667·α²",
+     "archive": 6
     },
     {
      "gen": 3,
      "gen_": 420,
-     "best_score": -3.506289298480405,
+     "best_score": -3.500289298480405,
      "best_train_loss": 0.00029696871620325956,
      "best_val_loss": 0.0007013187559734599,
-     "cost": 7.0,
+     "cost": 9.0,
      "nodes": 14,
-     "formula": "−(0.5·Z²) + Z·α + -0.666667·α²",
-     "archive": 7
+     "formula": "−(Z²/2) + Z·α + -0.666667·α²",
+     "archive": 6
     },
     {
      "gen": 4,
      "gen_": 560,
-     "best_score": -3.506289298480405,
+     "best_score": -3.500289298480405,
      "best_train_loss": 0.00029696871620325956,
      "best_val_loss": 0.0007013187559734599,
-     "cost": 7.0,
+     "cost": 9.0,
      "nodes": 14,
-     "formula": "−(0.5·Z²) + Z·α + -0.666667·α²",
-     "archive": 7
+     "formula": "−(Z²/2) + Z·α + -0.666667·α²",
+     "archive": 6
     },
     {
      "gen": 5,
      "gen_": 700,
-     "best_score": -3.506289298480405,
+     "best_score": -3.500289298480405,
      "best_train_loss": 0.00029696871620325956,
      "best_val_loss": 0.0007013187559734599,
-     "cost": 7.0,
+     "cost": 9.0,
      "nodes": 14,
-     "formula": "−(0.5·Z²) + Z·α + -0.666667·α²",
-     "archive": 7
+     "formula": "−(Z²/2) + Z·α + -0.666667·α²",
+     "archive": 9
     },
     {
      "gen": 6,
@@ -4325,7 +4510,7 @@
      "cost": 7.0,
      "nodes": 14,
      "formula": "−(0.5·Z²) + Z·α + -0.666667·α²",
-     "archive": 8
+     "archive": 10
     },
     {
      "gen": 9,
@@ -5124,7 +5309,7 @@
       }
      ],
      "failures": [],
-     "score_key": -2.8946844627120036
+     "score_key": -2.8861844627120035
     },
     {
      "formula": "-0.499537·(−(0.980055·α) + Z)²",
@@ -5202,7 +5387,7 @@
        "passed": true,
        "value": 0.0008483513993844956,
        "limit": 0.08,
-       "detail": "doğrulama hatası 8.484e-04 ≤ 8.0e-02"
+       "detail": "doğrulama hatası 8.492e-04 ≤ 8.0e-02"
       },
       {
        "id": "F8",
@@ -5224,7 +5409,7 @@
       }
      ],
      "failures": [],
-     "score_key": -2.888
+     "score_key": -2.885
     },
     {
      "formula": "-0.498994·(−(0.982533·α) + 0.00217041 + Z)²",
@@ -10945,7 +11130,7 @@
       "cost": 6.0,
       "nodes": 7,
       "formula": "-0.5·Z²/n²",
-      "archive": 6
+      "archive": 7
      },
      {
       "gen": 3,
@@ -10956,7 +11141,7 @@
       "cost": 6.0,
       "nodes": 7,
       "formula": "-0.5·Z²/n²",
-      "archive": 6
+      "archive": 8
      },
      {
       "gen": 4,
@@ -10967,7 +11152,7 @@
       "cost": 6.0,
       "nodes": 7,
       "formula": "-0.5·Z²/n²",
-      "archive": 7
+      "archive": 8
      },
      {
       "gen": 5,
@@ -11312,6 +11497,188 @@
      }
     ],
     "hall_of_fame": [
+     {
+      "formula": "-0.5·(Z/n)²",
+      "python": "(-0.5 * ((Z / n)**2))",
+      "tree": "('f', 'mul', ('c', -0.5), ('f', 'sq', ('f', 'div', ('x', 0), ('x', 1))))",
+      "cost": 5.0,
+      "nodes": 6,
+      "depth": 4,
+      "eval_us": 13.4,
+      "loss_train": 5.038196274891228e-05,
+      "loss_val": 9.625389522105586e-05,
+      "loss_test": 0.00032377263009747545,
+      "max_rel_err_test": 0.000399840127893551,
+      "ok": true,
+      "verified": true,
+      "filters": [
+       {
+        "id": "F1",
+        "name": "ucuz katman (transandantal operatör yasağı)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0,
+        "limit": null,
+        "detail": "yasaklı operatör yok"
+       },
+       {
+        "id": "F2",
+        "name": "ölçek simetrisi (boyut analizi)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 3.3306690738754696e-16,
+        "limit": 0.05,
+        "detail": "Δlog/Δlog(Z)≈2.0: sapma 3.33e-16"
+       },
+       {
+        "id": "F3",
+        "name": "gürbüzlük + donanım güvenliği",
+        "group": "ELEME",
+        "passed": true,
+        "value": 13.41500001217355,
+        "limit": 400.0,
+        "detail": "güvenli"
+       },
+       {
+        "id": "F4",
+        "name": "numeroloji bariyeri (null test)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 9.625389522105586e-05,
+        "limit": 0.16816130782771524,
+        "detail": "aday 9.625e-05 vs bariyer 1.682e-01 (karışık etiket en iyisi 8.408e-01 / 5)"
+       },
+       {
+        "id": "F5",
+        "name": "Hellmann-Feynman (dE/dZ = -<1/r>)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.0008073269462826756,
+        "limit": 0.01,
+        "detail": "göreli hata 8.073e-04"
+       },
+       {
+        "id": "F6",
+        "name": "virial / eylem durağanlığı E=-(Z/2)<1/r>",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.0008084706930745827,
+        "limit": 0.01,
+        "detail": "göreli hata 8.085e-04"
+       },
+       {
+        "id": "F7",
+        "name": "ekstrapolasyon (eğitim dışı rejim)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 9.625389522105586e-05,
+        "limit": 0.004,
+        "detail": "doğrulama hatası 9.625e-05 ≤ 4.0e-03"
+       },
+       {
+        "id": "F8",
+        "name": "referans eylem artığı |2<T>+<V>|/|E|",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.005642043654492092,
+        "limit": 0.01,
+        "detail": "sayısal referans göreli artığı 5.64e-03"
+       }
+      ],
+      "failures": [],
+      "score_key": -3.6725414329074475
+     },
+     {
+      "formula": "(Z/n)²·-0.5",
+      "python": "(((Z / n)**2) * -0.5)",
+      "tree": "('f', 'mul', ('f', 'sq', ('f', 'div', ('x', 0), ('x', 1))), ('c', -0.5))",
+      "cost": 5.0,
+      "nodes": 6,
+      "depth": 4,
+      "eval_us": 14.7,
+      "loss_train": 5.038196274891228e-05,
+      "loss_val": 9.625389522105586e-05,
+      "loss_test": 0.00032377263009747545,
+      "max_rel_err_test": 0.000399840127893551,
+      "ok": true,
+      "verified": true,
+      "filters": [
+       {
+        "id": "F1",
+        "name": "ucuz katman (transandantal operatör yasağı)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0,
+        "limit": null,
+        "detail": "yasaklı operatör yok"
+       },
+       {
+        "id": "F2",
+        "name": "ölçek simetrisi (boyut analizi)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 3.3306690738754696e-16,
+        "limit": 0.05,
+        "detail": "Δlog/Δlog(Z)≈2.0: sapma 3.33e-16"
+       },
+       {
+        "id": "F3",
+        "name": "gürbüzlük + donanım güvenliği",
+        "group": "ELEME",
+        "passed": true,
+        "value": 14.687999993157064,
+        "limit": 400.0,
+        "detail": "güvenli"
+       },
+       {
+        "id": "F4",
+        "name": "numeroloji bariyeri (null test)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 9.625389522105586e-05,
+        "limit": 0.16816130782771524,
+        "detail": "aday 9.625e-05 vs bariyer 1.682e-01 (karışık etiket en iyisi 8.408e-01 / 5)"
+       },
+       {
+        "id": "F5",
+        "name": "Hellmann-Feynman (dE/dZ = -<1/r>)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.0008073269462826756,
+        "limit": 0.01,
+        "detail": "göreli hata 8.073e-04"
+       },
+       {
+        "id": "F6",
+        "name": "virial / eylem durağanlığı E=-(Z/2)<1/r>",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.0008084706930745827,
+        "limit": 0.01,
+        "detail": "göreli hata 8.085e-04"
+       },
+       {
+        "id": "F7",
+        "name": "ekstrapolasyon (eğitim dışı rejim)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 9.625389522105586e-05,
+        "limit": 0.004,
+        "detail": "doğrulama hatası 9.625e-05 ≤ 4.0e-03"
+       },
+       {
+        "id": "F8",
+        "name": "referans eylem artığı |2<T>+<V>|/|E|",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.005642043654492092,
+        "limit": 0.01,
+        "detail": "sayısal referans göreli artığı 5.64e-03"
+       }
+      ],
+      "failures": [],
+      "score_key": -3.6725414329074475
+     },
      {
       "formula": "-0.5·Z²/n²",
       "python": "(-0.5 * ((Z**2) / (n**2)))",
@@ -12977,18 +13344,18 @@
         "name": "virial / eylem durağanlığı E=-(Z/2)<1/r>",
         "group": "DOĞRULAMA",
         "passed": false,
-        "value": 0.9601673002735405,
+        "value": 1.2440866936601904,
         "limit": 0.01,
-        "detail": "göreli hata 9.602e-01"
+        "detail": "göreli hata 1.244e+00"
        },
        {
         "id": "F7",
         "name": "ekstrapolasyon (eğitim dışı rejim)",
         "group": "DOĞRULAMA",
         "passed": false,
-        "value": 0.9599106083782557,
+        "value": 1.2434543360810182,
         "limit": 0.004,
-        "detail": "doğrulama hatası 9.599e-01 ≤ 4.0e-03"
+        "detail": "doğrulama hatası 1.243e+00 ≤ 4.0e-03"
        },
        {
         "id": "F8",
@@ -14817,16 +15184,16 @@
      }
     ],
     "champion": {
-     "formula": "-0.5·Z²/n²",
-     "python": "(-0.5 * ((Z**2) / (n**2)))",
-     "tree": "('f', 'mul', ('c', -0.5), ('f', 'div', ('f', 'sq', ('x', 0)), ('f', 'sq', ('x', 1))))",
-     "cost": 6.0,
-     "nodes": 7,
+     "formula": "-0.5·(Z/n)²",
+     "python": "(-0.5 * ((Z / n)**2))",
+     "tree": "('f', 'mul', ('c', -0.5), ('f', 'sq', ('f', 'div', ('x', 0), ('x', 1))))",
+     "cost": 5.0,
+     "nodes": 6,
      "depth": 4,
      "eval_us": 18.1,
      "loss_train": 5.038196274891228e-05,
      "loss_val": 9.625389522105586e-05,
-     "loss_test": 0.00032377263009747534,
+     "loss_test": 0.00032377263009747545,
      "max_rel_err_test": 0.000399840127893551,
      "ok": true,
      "verified": true,
@@ -14872,7 +15239,7 @@
        "name": "Hellmann-Feynman (dE/dZ = -<1/r>)",
        "group": "DOĞRULAMA",
        "passed": true,
-       "value": 0.0008073269462831923,
+       "value": 0.0008073269462826756,
        "limit": 0.01,
        "detail": "göreli hata 8.073e-04"
       },
@@ -14881,7 +15248,7 @@
        "name": "virial / eylem durağanlığı E=-(Z/2)<1/r>",
        "group": "DOĞRULAMA",
        "passed": true,
-       "value": 0.0008084706930745826,
+       "value": 0.0008084706930745827,
        "limit": 0.01,
        "detail": "göreli hata 8.085e-04"
       },
@@ -14914,7 +15281,7 @@
       }
      ],
      "failures": [],
-     "score_key": -3.668255718621733
+     "score_key": -3.6725414329074475
     },
     "null_barrier": 0.9197265771538612,
     "seeds_used": [
@@ -14932,9 +15299,9 @@
     "known_limits": {
      "note": "Yalnızca keşif sonrası teşhis; arama/seçim bu bilgiyi kullanmaz.",
      "limit": "E = −Z²/(2n²) Hartree (Rydberg)",
-     "max_rel_deviation": 0.0,
-     "mean_rel_deviation": 0.0,
-     "champion_constants": "-0.5·Z²/n²"
+     "max_rel_deviation": 3.289261117762738e-16,
+     "mean_rel_deviation": 3.8376885947497586e-17,
+     "champion_constants": "-0.5·(Z/n)²"
     }
    },
    "ters_yaricap": {
@@ -14980,7 +15347,7 @@
       "cost": 4.0,
       "nodes": 4,
       "formula": "Z/n²",
-      "archive": 5
+      "archive": 6
      },
      {
       "gen": 2,
@@ -15002,7 +15369,7 @@
       "cost": 4.0,
       "nodes": 4,
       "formula": "Z/n²",
-      "archive": 6
+      "archive": 7
      },
      {
       "gen": 4,
@@ -15035,7 +15402,7 @@
       "cost": 4.0,
       "nodes": 4,
       "formula": "Z/n²",
-      "archive": 8
+      "archive": 7
      },
      {
       "gen": 7,
@@ -15068,7 +15435,7 @@
       "cost": 4.0,
       "nodes": 4,
       "formula": "Z/n²",
-      "archive": 10
+      "archive": 9
      },
      {
       "gen": 10,
@@ -15090,7 +15457,7 @@
       "cost": 4.0,
       "nodes": 4,
       "formula": "Z/n²",
-      "archive": 10
+      "archive": 11
      },
      {
       "gen": 12,
@@ -17042,7 +17409,7 @@
         "passed": false,
         "value": 6.83516703835152,
         "limit": 0.004,
-        "detail": "doğrulama hatası 6.835e+00 ≤ 4.0e-03"
+        "detail": "doğrulama hatası 2.551e+01 ≤ 4.0e-03"
        },
        {
         "id": "F8",
@@ -18549,7 +18916,7 @@
       "loss_test": 0.0,
       "max_rel_err_test": 0.0,
       "ok": true,
-      "verified": true,
+      "verified": false,
       "filters": [
        {
         "id": "F1",
@@ -18609,10 +18976,10 @@
         "id": "F7",
         "name": "ekstrapolasyon (eğitim dışı rejim)",
         "group": "DOĞRULAMA",
-        "passed": true,
-        "value": 0.0,
+        "passed": false,
+        "value": 0.07988388553313595,
         "limit": 0.008,
-        "detail": "doğrulama hatası 0.000e+00 ≤ 8.0e-03"
+        "detail": "doğrulama hatası 7.988e-02 ≤ 8.0e-03"
        },
        {
         "id": "F8",
@@ -18633,8 +19000,10 @@
         "detail": "uygulanamaz"
        }
       ],
-      "failures": [],
-      "score_key": -8.9325
+      "failures": [
+       "F7"
+      ],
+      "score_key": -1.2737262961721008
      },
      {
       "formula": "−(0.5·l) + l·(l + 1)/(2·r²)",
@@ -19220,9 +19589,9 @@
         "name": "ekstrapolasyon (eğitim dışı rejim)",
         "group": "DOĞRULAMA",
         "passed": false,
-        "value": 0.9961922859004193,
+        "value": 0.9935276147187005,
         "limit": 0.008,
-        "detail": "doğrulama hatası 9.962e-01 ≤ 8.0e-03"
+        "detail": "doğrulama hatası 9.935e-01 ≤ 8.0e-03"
        },
        {
         "id": "F8",
@@ -20341,46 +20710,46 @@
      {
       "gen": 2,
       "gen_": 280,
-      "best_score": -3.506289298480405,
+      "best_score": -3.500289298480405,
       "best_train_loss": 0.00029696871620325956,
       "best_val_loss": 0.0007013187559734599,
-      "cost": 7.0,
+      "cost": 9.0,
       "nodes": 14,
-      "formula": "−(0.5·Z²) + Z·α + -0.666667·α²",
-      "archive": 7
+      "formula": "−(Z²/2) + Z·α + -0.666667·α²",
+      "archive": 6
      },
      {
       "gen": 3,
       "gen_": 420,
-      "best_score": -3.506289298480405,
+      "best_score": -3.500289298480405,
       "best_train_loss": 0.00029696871620325956,
       "best_val_loss": 0.0007013187559734599,
-      "cost": 7.0,
+      "cost": 9.0,
       "nodes": 14,
-      "formula": "−(0.5·Z²) + Z·α + -0.666667·α²",
-      "archive": 7
+      "formula": "−(Z²/2) + Z·α + -0.666667·α²",
+      "archive": 6
      },
      {
       "gen": 4,
       "gen_": 560,
-      "best_score": -3.506289298480405,
+      "best_score": -3.500289298480405,
       "best_train_loss": 0.00029696871620325956,
       "best_val_loss": 0.0007013187559734599,
-      "cost": 7.0,
+      "cost": 9.0,
       "nodes": 14,
-      "formula": "−(0.5·Z²) + Z·α + -0.666667·α²",
-      "archive": 7
+      "formula": "−(Z²/2) + Z·α + -0.666667·α²",
+      "archive": 6
      },
      {
       "gen": 5,
       "gen_": 700,
-      "best_score": -3.506289298480405,
+      "best_score": -3.500289298480405,
       "best_train_loss": 0.00029696871620325956,
       "best_val_loss": 0.0007013187559734599,
-      "cost": 7.0,
+      "cost": 9.0,
       "nodes": 14,
-      "formula": "−(0.5·Z²) + Z·α + -0.666667·α²",
-      "archive": 7
+      "formula": "−(Z²/2) + Z·α + -0.666667·α²",
+      "archive": 9
      },
      {
       "gen": 6,
@@ -20413,7 +20782,7 @@
       "cost": 7.0,
       "nodes": 14,
       "formula": "−(0.5·Z²) + Z·α + -0.666667·α²",
-      "archive": 8
+      "archive": 10
      },
      {
       "gen": 9,
@@ -21112,7 +21481,7 @@
        }
       ],
       "failures": [],
-      "score_key": -2.8946844627120036
+      "score_key": -2.8861844627120035
      },
      {
       "formula": "-0.499537·(−(0.980055·α) + Z)²",
@@ -21190,7 +21559,7 @@
         "passed": true,
         "value": 0.0008483513993844956,
         "limit": 0.08,
-        "detail": "doğrulama hatası 8.484e-04 ≤ 8.0e-02"
+        "detail": "doğrulama hatası 8.492e-04 ≤ 8.0e-02"
        },
        {
         "id": "F8",
@@ -21212,7 +21581,7 @@
        }
       ],
       "failures": [],
-      "score_key": -2.888
+      "score_key": -2.885
      },
      {
       "formula": "-0.498994·(−(0.982533·α) + 0.00217041 + Z)²",
@@ -21513,6 +21882,643 @@
       ],
       "failures": [],
       "score_key": -2.6440424537720904
+     },
+     {
+      "formula": "0.995462·(-0.502054·Z² + Z·α − (-0.815624·α)²)",
+      "python": "(0.9954623055441049 * (((-0.5020535204432232 * (Z**2)) + (Z * α)) - ((-0.8156242796709406 * α)**2)))",
+      "tree": "('f', 'mul', ('c', 0.9954623055441049), ('f', 'sub', ('f', 'add', ('f', 'mul', ('c', -0.5020535204432232), ('f', 'sq', ('x', 0))), ('f', 'mul', ('x', 0), ('x', 1))), ('f', 'sq', ('f', 'mul', ('c', -0.8156242796709406), ('x', 1)))))",
+      "cost": 8.0,
+      "nodes": 15,
+      "depth": 6,
+      "eval_us": 25.8,
+      "loss_train": 0.00012740892607272387,
+      "loss_val": 0.0005479130782289841,
+      "loss_test": 0.0010364765690717456,
+      "max_rel_err_test": 0.002103638685145002,
+      "ok": true,
+      "verified": true,
+      "filters": [
+       {
+        "id": "F1",
+        "name": "ucuz katman (transandantal operatör yasağı)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0,
+        "limit": null,
+        "detail": "yasaklı operatör yok"
+       },
+       {
+        "id": "F2",
+        "name": "ölçek simetrisi",
+        "group": "ELEME",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "bu problemde ölçek yasası yok/atlandı"
+       },
+       {
+        "id": "F3",
+        "name": "gürbüzlük + donanım güvenliği",
+        "group": "ELEME",
+        "passed": true,
+        "value": 25.798999985227056,
+        "limit": 400.0,
+        "detail": "güvenli"
+       },
+       {
+        "id": "F4",
+        "name": "numeroloji bariyeri (null test)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0005479130782289841,
+        "limit": 0.1393084757510936,
+        "detail": "aday 5.479e-04 vs bariyer 1.393e-01 (karışık etiket en iyisi 6.965e-01 / 5)"
+       },
+       {
+        "id": "F5",
+        "name": "Hellmann-Feynman (dE/dZ = -<1/r>)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "uygulanamaz"
+       },
+       {
+        "id": "F6",
+        "name": "virial / eylem durağanlığı",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "uygulanamaz"
+       },
+       {
+        "id": "F7",
+        "name": "ekstrapolasyon (eğitim dışı rejim)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.0005479130782289841,
+        "limit": 0.08,
+        "detail": "doğrulama hatası 5.479e-04 ≤ 8.0e-02"
+       },
+       {
+        "id": "F8",
+        "name": "referans eylem artığı |2<T>+<V>|/|E|",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.005642043654492092,
+        "limit": 0.01,
+        "detail": "sayısal referans göreli artığı 5.64e-03"
+       }
+      ],
+      "failures": [],
+      "score_key": -2.826
+     },
+     {
+      "formula": "0.995462·(-0.502054·|Z²| + Z·α − (-0.815623·α)²)",
+      "python": "(0.9954621160147518 * (((-0.5020536131846014 * np.abs((Z**2))) + (Z * α)) - ((-0.8156230769822017 * α)**2)))",
+      "tree": "('f', 'mul', ('c', 0.9954621160147518), ('f', 'sub', ('f', 'add', ('f', 'mul', ('c', -0.5020536131846014), ('f', 'abs', ('f', 'sq', ('x', 0)))), ('f', 'mul', ('x', 0), ('x', 1))), ('f', 'sq', ('f', 'mul', ('c', -0.8156230769822017), ('x', 1)))))",
+      "cost": 9.0,
+      "nodes": 16,
+      "depth": 7,
+      "eval_us": 27.6,
+      "loss_train": 0.00012740892594948245,
+      "loss_val": 0.0005479113041994241,
+      "loss_test": 0.0010364564809691584,
+      "max_rel_err_test": 0.0021036001129840936,
+      "ok": true,
+      "verified": true,
+      "filters": [
+       {
+        "id": "F1",
+        "name": "ucuz katman (transandantal operatör yasağı)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0,
+        "limit": null,
+        "detail": "yasaklı operatör yok"
+       },
+       {
+        "id": "F2",
+        "name": "ölçek simetrisi",
+        "group": "ELEME",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "bu problemde ölçek yasası yok/atlandı"
+       },
+       {
+        "id": "F3",
+        "name": "gürbüzlük + donanım güvenliği",
+        "group": "ELEME",
+        "passed": true,
+        "value": 27.611000007254916,
+        "limit": 400.0,
+        "detail": "güvenli"
+       },
+       {
+        "id": "F4",
+        "name": "numeroloji bariyeri (null test)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0005479113041994241,
+        "limit": 0.1393084757510936,
+        "detail": "aday 5.479e-04 vs bariyer 1.393e-01 (karışık etiket en iyisi 6.965e-01 / 5)"
+       },
+       {
+        "id": "F5",
+        "name": "Hellmann-Feynman (dE/dZ = -<1/r>)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "uygulanamaz"
+       },
+       {
+        "id": "F6",
+        "name": "virial / eylem durağanlığı",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "uygulanamaz"
+       },
+       {
+        "id": "F7",
+        "name": "ekstrapolasyon (eğitim dışı rejim)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.0005479113041994241,
+        "limit": 0.08,
+        "detail": "doğrulama hatası 5.479e-04 ≤ 8.0e-02"
+       },
+       {
+        "id": "F8",
+        "name": "referans eylem artığı |2<T>+<V>|/|E|",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.005642043654492092,
+        "limit": 0.01,
+        "detail": "sayısal referans göreli artığı 5.64e-03"
+       }
+      ],
+      "failures": [],
+      "score_key": -2.823
+     },
+     {
+      "formula": "0.995463·(−(0.666667·α²) + α·Z + -0.146772·(1.8495·Z)²)",
+      "python": "(0.995462569205534 * (((-(0.6666666666666666 * (α**2))) + (α * Z)) + (-0.1467720667481523 * ((1.8494953667379221 * Z)**2))))",
+      "tree": "('f', 'mul', ('c', 0.995462569205534), ('f', 'add', ('f', 'add', ('f', 'neg', ('f', 'mul', ('c', 0.6666666666666666), ('f', 'sq', ('x', 1)))), ('f', 'mul', ('x', 1), ('x', 0))), ('f', 'mul', ('c', -0.1467720667481523), ('f', 'sq', ('f', 'mul', ('c', 1.8494953667379221), ('x', 0))))))",
+      "cost": 9.0,
+      "nodes": 18,
+      "depth": 7,
+      "eval_us": 28.6,
+      "loss_train": 0.0001277757034629074,
+      "loss_val": 0.0005550754253962213,
+      "loss_test": 0.0010615220909351354,
+      "max_rel_err_test": 0.0021344996130291502,
+      "ok": true,
+      "verified": true,
+      "filters": [
+       {
+        "id": "F1",
+        "name": "ucuz katman (transandantal operatör yasağı)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0,
+        "limit": null,
+        "detail": "yasaklı operatör yok"
+       },
+       {
+        "id": "F2",
+        "name": "ölçek simetrisi",
+        "group": "ELEME",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "bu problemde ölçek yasası yok/atlandı"
+       },
+       {
+        "id": "F3",
+        "name": "gürbüzlük + donanım güvenliği",
+        "group": "ELEME",
+        "passed": true,
+        "value": 28.57300000869145,
+        "limit": 400.0,
+        "detail": "güvenli"
+       },
+       {
+        "id": "F4",
+        "name": "numeroloji bariyeri (null test)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0005550754253962213,
+        "limit": 0.1393084757510936,
+        "detail": "aday 5.551e-04 vs bariyer 1.393e-01 (karışık etiket en iyisi 6.965e-01 / 5)"
+       },
+       {
+        "id": "F5",
+        "name": "Hellmann-Feynman (dE/dZ = -<1/r>)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "uygulanamaz"
+       },
+       {
+        "id": "F6",
+        "name": "virial / eylem durağanlığı",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "uygulanamaz"
+       },
+       {
+        "id": "F7",
+        "name": "ekstrapolasyon (eğitim dışı rejim)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.0005550754253962213,
+        "limit": 0.08,
+        "detail": "doğrulama hatası 5.551e-04 ≤ 8.0e-02"
+       },
+       {
+        "id": "F8",
+        "name": "referans eylem artığı |2<T>+<V>|/|E|",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.005642043654492092,
+        "limit": 0.01,
+        "detail": "sayısal referans göreli artığı 5.64e-03"
+       }
+      ],
+      "failures": [],
+      "score_key": -2.8129999999999997
+     },
+     {
+      "formula": "0.995462·(−(0.666667·α²) + α·Z + -0.146772·(1.8495·Z)²)",
+      "python": "(0.9954620830469317 * (((-(0.6666666666666666 * (α**2))) + (α * Z)) + (-0.146772119316046 * ((1.8494954738094072 * Z)**2))))",
+      "tree": "('f', 'mul', ('c', 0.9954620830469317), ('f', 'add', ('f', 'add', ('f', 'neg', ('f', 'mul', ('c', 0.6666666666666666), ('f', 'sq', ('x', 1)))), ('f', 'mul', ('x', 1), ('x', 0))), ('f', 'mul', ('c', -0.146772119316046), ('f', 'sq', ('f', 'mul', ('c', 1.8494954738094072), ('x', 0))))))",
+      "cost": 9.0,
+      "nodes": 18,
+      "depth": 7,
+      "eval_us": 28.5,
+      "loss_train": 0.000127777862094333,
+      "loss_val": 0.0005550964755013984,
+      "loss_test": 0.001061559502312016,
+      "max_rel_err_test": 0.0021345097648962337,
+      "ok": true,
+      "verified": true,
+      "filters": [
+       {
+        "id": "F1",
+        "name": "ucuz katman (transandantal operatör yasağı)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0,
+        "limit": null,
+        "detail": "yasaklı operatör yok"
+       },
+       {
+        "id": "F2",
+        "name": "ölçek simetrisi",
+        "group": "ELEME",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "bu problemde ölçek yasası yok/atlandı"
+       },
+       {
+        "id": "F3",
+        "name": "gürbüzlük + donanım güvenliği",
+        "group": "ELEME",
+        "passed": true,
+        "value": 28.534000023228145,
+        "limit": 400.0,
+        "detail": "güvenli"
+       },
+       {
+        "id": "F4",
+        "name": "numeroloji bariyeri (null test)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0005550964755013984,
+        "limit": 0.1393084757510936,
+        "detail": "aday 5.551e-04 vs bariyer 1.393e-01 (karışık etiket en iyisi 6.965e-01 / 5)"
+       },
+       {
+        "id": "F5",
+        "name": "Hellmann-Feynman (dE/dZ = -<1/r>)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "uygulanamaz"
+       },
+       {
+        "id": "F6",
+        "name": "virial / eylem durağanlığı",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "uygulanamaz"
+       },
+       {
+        "id": "F7",
+        "name": "ekstrapolasyon (eğitim dışı rejim)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.0005550964755013984,
+        "limit": 0.08,
+        "detail": "doğrulama hatası 5.551e-04 ≤ 8.0e-02"
+       },
+       {
+        "id": "F8",
+        "name": "referans eylem artığı |2<T>+<V>|/|E|",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.005642043654492092,
+        "limit": 0.01,
+        "detail": "sayısal referans göreli artığı 5.64e-03"
+       }
+      ],
+      "failures": [],
+      "score_key": -2.8129999999999997
+     },
+     {
+      "formula": "0.995462·(−(0.666667·α²) + (Z + α)·Z + -0.396612·(1.94608·Z)²)",
+      "python": "(0.9954620931099771 * (((-(0.6666666666666666 * (α**2))) + ((Z + α) * Z)) + (-0.3966122350036003 * ((1.9460754097506634 * Z)**2))))",
+      "tree": "('f', 'mul', ('c', 0.9954620931099771), ('f', 'add', ('f', 'add', ('f', 'neg', ('f', 'mul', ('c', 0.6666666666666666), ('f', 'sq', ('x', 1)))), ('f', 'mul', ('f', 'add', ('x', 0), ('x', 1)), ('x', 0))), ('f', 'mul', ('c', -0.3966122350036003), ('f', 'sq', ('f', 'mul', ('c', 1.9460754097506634), ('x', 0))))))",
+      "cost": 10.0,
+      "nodes": 20,
+      "depth": 7,
+      "eval_us": 30.8,
+      "loss_train": 0.00012777781734570209,
+      "loss_val": 0.0005550960399774864,
+      "loss_test": 0.0010615587280135117,
+      "max_rel_err_test": 0.0021345095547686123,
+      "ok": true,
+      "verified": true,
+      "filters": [
+       {
+        "id": "F1",
+        "name": "ucuz katman (transandantal operatör yasağı)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0,
+        "limit": null,
+        "detail": "yasaklı operatör yok"
+       },
+       {
+        "id": "F2",
+        "name": "ölçek simetrisi",
+        "group": "ELEME",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "bu problemde ölçek yasası yok/atlandı"
+       },
+       {
+        "id": "F3",
+        "name": "gürbüzlük + donanım güvenliği",
+        "group": "ELEME",
+        "passed": true,
+        "value": 30.758000008290765,
+        "limit": 400.0,
+        "detail": "güvenli"
+       },
+       {
+        "id": "F4",
+        "name": "numeroloji bariyeri (null test)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0005550960399774864,
+        "limit": 0.1393084757510936,
+        "detail": "aday 5.551e-04 vs bariyer 1.393e-01 (karışık etiket en iyisi 6.965e-01 / 5)"
+       },
+       {
+        "id": "F5",
+        "name": "Hellmann-Feynman (dE/dZ = -<1/r>)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "uygulanamaz"
+       },
+       {
+        "id": "F6",
+        "name": "virial / eylem durağanlığı",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "uygulanamaz"
+       },
+       {
+        "id": "F7",
+        "name": "ekstrapolasyon (eğitim dışı rejim)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.0005550960399774864,
+        "limit": 0.08,
+        "detail": "doğrulama hatası 5.551e-04 ≤ 8.0e-02"
+       },
+       {
+        "id": "F8",
+        "name": "referans eylem artığı |2<T>+<V>|/|E|",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.005642043654492092,
+        "limit": 0.01,
+        "detail": "sayısal referans göreli artığı 5.64e-03"
+       }
+      ],
+      "failures": [],
+      "score_key": -2.81
+     },
+     {
+      "formula": "0.93445·(-0.533842·Z + α)·Z",
+      "python": "(0.9344500649855203 * (((-0.5338419108932467 * Z) + α) * Z))",
+      "tree": "('f', 'mul', ('c', 0.9344500649855203), ('f', 'mul', ('f', 'add', ('f', 'mul', ('c', -0.5338419108932467), ('x', 0)), ('x', 1)), ('x', 0)))",
+      "cost": 4.0,
+      "nodes": 9,
+      "depth": 5,
+      "eval_us": 19.4,
+      "loss_train": 0.0017871146564312928,
+      "loss_val": 0.0027070036404410153,
+      "loss_test": 0.008087978697690025,
+      "max_rel_err_test": 0.0101605056828369,
+      "ok": true,
+      "verified": true,
+      "filters": [
+       {
+        "id": "F1",
+        "name": "ucuz katman (transandantal operatör yasağı)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0,
+        "limit": null,
+        "detail": "yasaklı operatör yok"
+       },
+       {
+        "id": "F2",
+        "name": "ölçek simetrisi",
+        "group": "ELEME",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "bu problemde ölçek yasası yok/atlandı"
+       },
+       {
+        "id": "F3",
+        "name": "gürbüzlük + donanım güvenliği",
+        "group": "ELEME",
+        "passed": true,
+        "value": 19.3770000009863,
+        "limit": 400.0,
+        "detail": "güvenli"
+       },
+       {
+        "id": "F4",
+        "name": "numeroloji bariyeri (null test)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0027070036404410153,
+        "limit": 0.1393084757510936,
+        "detail": "aday 2.707e-03 vs bariyer 1.393e-01 (karışık etiket en iyisi 6.965e-01 / 5)"
+       },
+       {
+        "id": "F5",
+        "name": "Hellmann-Feynman (dE/dZ = -<1/r>)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "uygulanamaz"
+       },
+       {
+        "id": "F6",
+        "name": "virial / eylem durağanlığı",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "uygulanamaz"
+       },
+       {
+        "id": "F7",
+        "name": "ekstrapolasyon (eğitim dışı rejim)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.0027070036404410153,
+        "limit": 0.08,
+        "detail": "doğrulama hatası 2.707e-03 ≤ 8.0e-02"
+       },
+       {
+        "id": "F8",
+        "name": "referans eylem artığı |2<T>+<V>|/|E|",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.005642043654492092,
+        "limit": 0.01,
+        "detail": "sayısal referans göreli artığı 5.64e-03"
+       }
+      ],
+      "failures": [],
+      "score_key": -2.635847583443966
+     },
+     {
+      "formula": "-0.498849·(Z² + -1.87321·Z·α)",
+      "python": "(-0.4988486083261984 * ((Z**2) + (-1.8732137353679037 * (Z * α))))",
+      "tree": "('f', 'mul', ('c', -0.4988486083261984), ('f', 'add', ('f', 'sq', ('x', 0)), ('f', 'mul', ('c', -1.8732137353679037), ('f', 'mul', ('x', 0), ('x', 1)))))",
+      "cost": 5.0,
+      "nodes": 10,
+      "depth": 5,
+      "eval_us": 20.7,
+      "loss_train": 0.001787114656431301,
+      "loss_val": 0.0027070036404454887,
+      "loss_test": 0.008087978697713225,
+      "max_rel_err_test": 0.01016050568284641,
+      "ok": true,
+      "verified": true,
+      "filters": [
+       {
+        "id": "F1",
+        "name": "ucuz katman (transandantal operatör yasağı)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0,
+        "limit": null,
+        "detail": "yasaklı operatör yok"
+       },
+       {
+        "id": "F2",
+        "name": "ölçek simetrisi",
+        "group": "ELEME",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "bu problemde ölçek yasası yok/atlandı"
+       },
+       {
+        "id": "F3",
+        "name": "gürbüzlük + donanım güvenliği",
+        "group": "ELEME",
+        "passed": true,
+        "value": 20.719000019653322,
+        "limit": 400.0,
+        "detail": "güvenli"
+       },
+       {
+        "id": "F4",
+        "name": "numeroloji bariyeri (null test)",
+        "group": "ELEME",
+        "passed": true,
+        "value": 0.0027070036404454887,
+        "limit": 0.1393084757510936,
+        "detail": "aday 2.707e-03 vs bariyer 1.393e-01 (karışık etiket en iyisi 6.965e-01 / 5)"
+       },
+       {
+        "id": "F5",
+        "name": "Hellmann-Feynman (dE/dZ = -<1/r>)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "uygulanamaz"
+       },
+       {
+        "id": "F6",
+        "name": "virial / eylem durağanlığı",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": null,
+        "limit": null,
+        "detail": "uygulanamaz"
+       },
+       {
+        "id": "F7",
+        "name": "ekstrapolasyon (eğitim dışı rejim)",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.0027070036404454887,
+        "limit": 0.08,
+        "detail": "doğrulama hatası 2.707e-03 ≤ 8.0e-02"
+       },
+       {
+        "id": "F8",
+        "name": "referans eylem artığı |2<T>+<V>|/|E|",
+        "group": "DOĞRULAMA",
+        "passed": true,
+        "value": 0.005642043654492092,
+        "limit": 0.01,
+        "detail": "sayısal referans göreli artığı 5.64e-03"
+       }
+      ],
+      "failures": [],
+      "score_key": -2.632847583443964
      },
      {
       "formula": "−(0.498849·Z²) + 0.93445·Z·α",
@@ -22088,9 +23094,9 @@
         "name": "ekstrapolasyon (eğitim dışı rejim)",
         "group": "DOĞRULAMA",
         "passed": false,
-        "value": 0.3679092206120862,
+        "value": 0.27344912046997943,
         "limit": 0.08,
-        "detail": "doğrulama hatası 3.679e-01 ≤ 8.0e-02"
+        "detail": "doğrulama hatası 2.734e-01 ≤ 8.0e-02"
        },
        {
         "id": "F8",

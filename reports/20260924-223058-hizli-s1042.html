@@ -1,0 +1,407 @@
+<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8">
+<title>Rapor 20260924-223058-hizli-s1042</title><style>
+body{background:#0b0f14;color:#e6edf3;font:15px/1.6 ui-monospace,Menlo,Consolas,monospace;margin:0;padding:28px;max-width:1100px}
+h1,h2,h3{color:#7ee787;font-weight:600} h1{border-bottom:1px solid #21262d;padding-bottom:8px}
+table{border-collapse:collapse;width:100%;margin:10px 0} td,th{border:1px solid #21262d;padding:6px 9px;text-align:left;font-size:13px}
+th{background:#161b22;color:#79c0ff} code,pre{background:#161b22;border-radius:4px;padding:1px 5px;color:#ffa657}
+pre{padding:10px;overflow:auto} li{margin-left:18px} p{color:#c9d1d9}
+</style></head><body><h1>Evrimsel Keşif Raporu — 20260924-223058-hizli-s1042</h1>
+
+<li><b>Başlangıç / bitiş:</b> 2026-09-24T22:30:58+00:00 → 2026-09-24T22:48:23+00:00</li>
+<li><b>Ön ayar / tohum:</b> <code>hizli</code> / <code>1042</code></li>
+<li><b>Toplam süre:</b> 1044.96 s</li>
+<li><b>Yapılandırma:</b> <code>{&quot;pop_size&quot;: 140, &quot;generations&quot;: 35, &quot;islands&quot;: 3, &quot;migration_every&quot;: 12, &quot;tournament&quot;: 5, &quot;crossover_rate&quot;: 0.75, &quot;elite_frac&quot;: 0.06, &quot;max_depth&quot;: 5, &quot;max_nodes&quot;: 22, &quot;init_max_depth&quot;: 3, &quot;cost_weight&quot;: 0.06, &quot;lm_steps&quot;: 5, &quot;simplify&quot;: true, &quot;seed&quot;: 1042, &quot;time_budget_us&quot;: 400.0, &quot;null_factor&quot;: 5.0, &quot;strict_interval&quot;: 5, &quot;patience&quot;: 45, &quot;physics_seeded&quot;: true, &quot;blind_mode&quot;: false}</code></li>
+
+<h2>Bağımsız veri doğrulaması</h2>
+
+<table>
+<tr><th>ölçüt</th><th>değer</th></tr>
+<tr><td>norm_residual</td><td>1.110e-16</td></tr>
+<tr><td>action_residual</td><td>1.877e-04</td></tr>
+<tr><td>virial_ratio</td><td>2.000e+00</td></tr>
+<tr><td>grid_delta</td><td>3.749e-05</td></tr>
+<tr><td>checksum_sha256</td><td>d40532e39a4d3c679ea193912c2e26988518a593de5e94211d5e956bb965eec2</td></tr>
+<tr><td>max</td><td>E(2Z)/E(Z)-4</td><td></td><td>7.499580530545558e-05</td></tr>
+<tr><td>max</td><td>l-dejenerasyon hatası</td><td></td><td>4.166638612357332e-06</td></tr>
+<tr><td>max rel</td><td>eylem artığı</td><td></td><td>0.005642043654492092</td></tr>
+</table>
+
+<h2>Benchmarklar ve keşfedilen formüller</h2>
+
+<h3>Hidrojenik enerji yasası  E(Z, n)  (<code>enerji</code>)</h3>
+
+<li>Değişkenler: <code>Z, n</code></li>
+<li>Nesil / değerlendirme: 35 / 4900</li>
+<li>Numeroloji bariyeri: 0.8779437197447251</li>
+<li><b>Keşfedilen en ucuz formül:</b> <code>-0.5·(Z/n)²</code></li>
+<li>Python: <code>(-0.5 * ((Z / n)**2))</code></li>
+<li>Maliyet: <b>5.0 işlem birimi</b>, düğüm=6, derinlik=4, 16.4 µs/1000 nokta</li>
+<li>Hatalar (göreli RMSE): eğitim=5.038e-05, doğrulama=9.625e-05, <b>sınav=3.238e-04</b>, en kötü bağıl sınav hatası=3.998e-04</li>
+<li>Doğrulandı mı: <b>True</b></li>
+
+<table>
+<tr><th>filtre</th><th>grup</th><th>sonuç</th><th>ayrıntı</th></tr>
+<tr><td>F1 — ucuz katman (transandantal operatör yasağı)</td><td>ELEME</td><td>✅</td><td>yasaklı operatör yok</td></tr>
+<tr><td>F2 — ölçek simetrisi (boyut analizi)</td><td>ELEME</td><td>✅</td><td>ölçek Z: en kötü sapma 3.33e-16 (tolerans 5e-02) [normalize edilmiş artık]</td></tr>
+<tr><td>F3 — gürbüzlük + donanım güvenliği</td><td>ELEME</td><td>✅</td><td>güvenli</td></tr>
+<tr><td>F4 — numeroloji bariyeri (null test)</td><td>ELEME</td><td>✅</td><td>aday 9.625e-05 vs bariyer 1.756e-01 (karışık etiket en iyisi 8.779e-01 / 5)</td></tr>
+<tr><td>F5 — Hellmann-Feynman (dE/dZ = -&lt;1/r&gt;)</td><td>DOĞRULAMA</td><td>✅</td><td>göreli hata 8.073e-04</td></tr>
+<tr><td>F6 — virial / eylem durağanlığı E=-(Z/2)&lt;1/r&gt;</td><td>DOĞRULAMA</td><td>✅</td><td>göreli hata 8.085e-04</td></tr>
+<tr><td>F7 — ekstrapolasyon (eğitim dışı rejim)</td><td>DOĞRULAMA</td><td>✅</td><td>doğrulama hatası 9.625e-05 ≤ 4.0e-03</td></tr>
+<tr><td>F8 — referans eylem artığı</td><td>2&lt;T&gt;+&lt;V&gt;</td><td>/</td><td>E</td><td></td><td>DOĞRULAMA</td><td>✅</td><td>sayısal referans göreli artığı 5.64e-03</td></tr>
+<tr><td>F9 — türev tutarlılığı (kuvvet = −dE/dR)</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+</table>
+
+<p><b>Bilinen analitik limit karşılaştırması (yalnızca teşhis — seçimde kullanılmadı):</b></p>
+
+<li>E = −Z²/(2n²) Hartree (Rydberg)</li>
+<li>en büyük bağıl sapma: <b>3.289e-16</b>, ortalama: 3.838e-17</li>
+
+<p><b>Onur listesi (en iyiler):</b></p>
+
+<table>
+<tr><th>formül</th><th>maliyet</th><th>train</th><th>val</th><th>sınav</th><th>doğrulandı</th></tr>
+<tr><td><code>-0.5·(Z/n)²</code></td><td>5.0</td><td>5.038e-05</td><td>9.625e-05</td><td>3.238e-04</td><td>True</td></tr>
+<tr><td><code>-0.5·Z²/n²</code></td><td>6.0</td><td>5.038e-05</td><td>9.625e-05</td><td>3.238e-04</td><td>True</td></tr>
+<tr><td><code>0 − (−(0.707087·Z/n))²</code></td><td>6.0</td><td>1.766e-05</td><td>4.324e-05</td><td>2.713e-04</td><td>True</td></tr>
+<tr><td><code>−((-0.70709·Z)²/n²)</code></td><td>6.0</td><td>1.559e-05</td><td>5.063e-05</td><td>2.789e-04</td><td>True</td></tr>
+<tr><td><code>-0.229501·(-1.47599·Z/n)²</code></td><td>6.0</td><td>1.559e-05</td><td>5.063e-05</td><td>2.789e-04</td><td>True</td></tr>
+<tr><td>`-0.155447·(-1.79343·</td><td>Z</td><td>/n)²`</td><td>7.0</td><td>1.559e-05</td><td>5.063e-05</td><td>2.789e-04</td><td>True</td></tr>
+</table>
+
+<p>Şeffaflık — kullanılan fizik ön-bilgisi şablonları (bunlar cevap değil, boş kalıplardır): <code>-1·Z²/n²</code>, <code>Z²/(n²·2)</code>, <code>-1·Z/n²</code>, <code>Z/(n²·2)</code>, <code>1 − 1·Z/n²</code>, <code>−(Z²)/2 + 1·Z</code>, <code>-0.5·Z²/(n² + 0)</code>, <code>Z²/(n²·(1 + 0))</code></p>
+
+
+<h3>Beklenen ters yarıçap  ⟨1/r⟩(Z, n)  (<code>ters_yaricap</code>)</h3>
+
+<li>Değişkenler: <code>Z, n</code></li>
+<li>Nesil / değerlendirme: 35 / 4900</li>
+<li>Numeroloji bariyeri: 1.0426831531554441</li>
+<li><b>Keşfedilen en ucuz formül:</b> <code>Z/n²</code></li>
+<li>Python: <code>(Z / (n**2))</code></li>
+<li>Maliyet: <b>4.0 işlem birimi</b>, düğüm=4, derinlik=3, 12.6 µs/1000 nokta</li>
+<li>Hatalar (göreli RMSE): eğitim=3.857e-04, doğrulama=8.073e-04, <b>sınav=2.296e-03</b>, en kötü bağıl sınav hatası=3.230e-03</li>
+<li>Doğrulandı mı: <b>True</b></li>
+
+<table>
+<tr><th>filtre</th><th>grup</th><th>sonuç</th><th>ayrıntı</th></tr>
+<tr><td>F1 — ucuz katman (transandantal operatör yasağı)</td><td>ELEME</td><td>✅</td><td>yasaklı operatör yok</td></tr>
+<tr><td>F2 — ölçek simetrisi (boyut analizi)</td><td>ELEME</td><td>✅</td><td>ölçek Z: en kötü sapma 0.00e+00 (tolerans 5e-02) [normalize edilmiş artık]</td></tr>
+<tr><td>F3 — gürbüzlük + donanım güvenliği</td><td>ELEME</td><td>✅</td><td>güvenli</td></tr>
+<tr><td>F4 — numeroloji bariyeri (null test)</td><td>ELEME</td><td>✅</td><td>aday 8.073e-04 vs bariyer 2.085e-01 (karışık etiket en iyisi 1.043e+00 / 5)</td></tr>
+<tr><td>F5 — Hellmann-Feynman (dE/dZ = -&lt;1/r&gt;)</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+<tr><td>F6 — virial / eylem durağanlığı</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+<tr><td>F7 — ekstrapolasyon (eğitim dışı rejim)</td><td>DOĞRULAMA</td><td>✅</td><td>doğrulama hatası 8.073e-04 ≤ 4.0e-03</td></tr>
+<tr><td>F8 — referans eylem artığı</td><td>2&lt;T&gt;+&lt;V&gt;</td><td>/</td><td>E</td><td></td><td>DOĞRULAMA</td><td>✅</td><td>sayısal referans göreli artığı 5.64e-03</td></tr>
+<tr><td>F9 — türev tutarlılığı (kuvvet = −dE/dR)</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+</table>
+
+<p><b>Bilinen analitik limit karşılaştırması (yalnızca teşhis — seçimde kullanılmadı):</b></p>
+
+<li>⟨1/r⟩ = Z/n² (a₀⁻¹)</li>
+<li>en büyük bağıl sapma: <b>0.000e+00</b>, ortalama: 0.000e+00</li>
+
+<p><b>Onur listesi (en iyiler):</b></p>
+
+<table>
+<tr><th>formül</th><th>maliyet</th><th>train</th><th>val</th><th>sınav</th><th>doğrulandı</th></tr>
+<tr><td><code>Z/n²</code></td><td>4.0</td><td>3.857e-04</td><td>8.073e-04</td><td>2.296e-03</td><td>True</td></tr>
+<tr><td><code>1/n²·Z</code></td><td>5.0</td><td>3.857e-04</td><td>8.073e-04</td><td>2.296e-03</td><td>True</td></tr>
+<tr><td><code>−(-1·Z/n²)</code></td><td>5.0</td><td>3.857e-04</td><td>8.073e-04</td><td>2.296e-03</td><td>True</td></tr>
+<tr><td><code>0 − -1·Z/n²</code></td><td>6.0</td><td>3.857e-04</td><td>8.073e-04</td><td>2.296e-03</td><td>True</td></tr>
+<tr><td><code>(0 − 1/n²)·Z·-1</code></td><td>7.0</td><td>3.857e-04</td><td>8.073e-04</td><td>2.296e-03</td><td>True</td></tr>
+<tr><td><code>0.5·(0 − 2/n²)·Z·-1</code></td><td>8.0</td><td>3.857e-04</td><td>8.073e-04</td><td>2.296e-03</td><td>True</td></tr>
+</table>
+
+<p>Şeffaflık — kullanılan fizik ön-bilgisi şablonları (bunlar cevap değil, boş kalıplardır): <code>-1·Z²/n²</code>, <code>Z²/(n²·2)</code>, <code>-1·Z/n²</code>, <code>Z/(n²·2)</code>, <code>1 − 1·Z/n²</code>, <code>−(Z²)/2 + 1·Z</code>, <code>-0.5·Z²/(n² + 0)</code>, <code>Z²/(n²·(1 + 0))</code></p>
+
+
+<h3>Etkin potansiyel  V_eff(r, l, Z) = −Z/r + l(l+1)/(2r²)  (<code>etkin_potansiyel</code>)</h3>
+
+<li>Değişkenler: <code>r, l, Z</code></li>
+<li>Nesil / değerlendirme: 35 / 4900</li>
+<li>Numeroloji bariyeri: 0.9963778456160434</li>
+<li><b>Keşfedilen en ucuz formül:</b> <code>−(Z/r) + l·(l + 1)/(2·r²)</code></li>
+<li>Python: <code>((-(Z / r)) + ((l * (l + 1.0)) / (2.0 * (r**2))))</code></li>
+<li>Maliyet: <b>11.0 işlem birimi</b>, düğüm=15, derinlik=5, 47.6 µs/1000 nokta</li>
+<li>Hatalar (göreli RMSE): eğitim=0.000e+00, doğrulama=0.000e+00, <b>sınav=0.000e+00</b>, en kötü bağıl sınav hatası=0.000e+00</li>
+<li>Doğrulandı mı: <b>True</b></li>
+
+<table>
+<tr><th>filtre</th><th>grup</th><th>sonuç</th><th>ayrıntı</th></tr>
+<tr><td>F1 — ucuz katman (transandantal operatör yasağı)</td><td>ELEME</td><td>✅</td><td>yasaklı operatör yok</td></tr>
+<tr><td>F2 — ölçek simetrisi</td><td>ELEME</td><td>✅</td><td>bu problemde ölçek yasası yok/atlandı</td></tr>
+<tr><td>F3 — gürbüzlük + donanım güvenliği</td><td>ELEME</td><td>✅</td><td>güvenli</td></tr>
+<tr><td>F4 — numeroloji bariyeri (null test)</td><td>ELEME</td><td>✅</td><td>aday 0.000e+00 vs bariyer 1.993e-01 (karışık etiket en iyisi 9.964e-01 / 5)</td></tr>
+<tr><td>F5 — Hellmann-Feynman (dE/dZ = -&lt;1/r&gt;)</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+<tr><td>F6 — virial / eylem durağanlığı</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+<tr><td>F7 — ekstrapolasyon (eğitim dışı rejim)</td><td>DOĞRULAMA</td><td>✅</td><td>doğrulama hatası 0.000e+00 ≤ 8.0e-03</td></tr>
+<tr><td>F8 — referans eylem artığı</td><td>2&lt;T&gt;+&lt;V&gt;</td><td>/</td><td>E</td><td></td><td>DOĞRULAMA</td><td>✅</td><td>sayısal referans göreli artığı 5.64e-03</td></tr>
+<tr><td>F9 — türev tutarlılığı (kuvvet = −dE/dR)</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+</table>
+
+<p><b>Bilinen analitik limit karşılaştırması (yalnızca teşhis — seçimde kullanılmadı):</b></p>
+
+<li>V_eff = −Z/r + l(l+1)/(2r²) (tam ifade)</li>
+<li>en büyük bağıl sapma: <b>0.000e+00</b>, ortalama: 0.000e+00</li>
+
+<p><b>Onur listesi (en iyiler):</b></p>
+
+<table>
+<tr><th>formül</th><th>maliyet</th><th>train</th><th>val</th><th>sınav</th><th>doğrulandı</th></tr>
+<tr><td><code>−(Z/r) + l·(l + 1)/(2·r²)</code></td><td>11.0</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>True</td></tr>
+<tr><td><code>−(Z/r) − −(0.5·l·(l + 1)/r²)</code></td><td>11.0</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>True</td></tr>
+<tr><td><code>-1·(Z/r + l·(l + 1)/(-2·r²))</code></td><td>12.0</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>True</td></tr>
+<tr><td><code>−(Z/(Z·r)) + l·(l + 1)/(2·r²)</code></td><td>12.0</td><td>4.508e-02</td><td>9.382e-02</td><td>9.420e-02</td><td>False</td></tr>
+<tr><td><code>0.666667·(l/r)²</code></td><td>5.0</td><td>6.216e-02</td><td>9.798e-02</td><td>9.872e-02</td><td>False</td></tr>
+<tr><td><code>(0.806828·l/r)²</code></td><td>5.0</td><td>5.731e-02</td><td>1.070e-01</td><td>1.077e-01</td><td>False</td></tr>
+</table>
+
+<p>Şeffaflık — kullanılan fizik ön-bilgisi şablonları (bunlar cevap değil, boş kalıplardır): <code>−Z/r + l·(l + 1)/(2·r²)</code>, <code>-1·Z/r + l²/(2·r²)</code>, <code>−Z/r</code>, <code>−Z/r + l/r²</code></p>
+
+
+<h3>Perdeli Coulomb (Yukawa) taban enerjisi için ucuz vekil  (<code>yukawa</code>)</h3>
+
+<li>Değişkenler: <code>Z, α</code></li>
+<li>Nesil / değerlendirme: 35 / 4900</li>
+<li>Numeroloji bariyeri: 0.6874676541337219</li>
+<li><b>Keşfedilen en ucuz formül:</b> <code>−(0.5·Z²) + Z·α + -0.666667·α²</code></li>
+<li>Python: <code>(((-(0.5 * (Z<b>2))) + (Z * α)) + (-0.6666666666666666 * (α</b>2)))</code></li>
+<li>Maliyet: <b>7.0 işlem birimi</b>, düğüm=14, derinlik=6, 22.3 µs/1000 nokta</li>
+<li>Hatalar (göreli RMSE): eğitim=2.970e-04, doğrulama=7.013e-04, <b>sınav=9.597e-04</b>, en kötü bağıl sınav hatası=2.049e-03</li>
+<li>Doğrulandı mı: <b>True</b></li>
+
+<table>
+<tr><th>filtre</th><th>grup</th><th>sonuç</th><th>ayrıntı</th></tr>
+<tr><td>F1 — ucuz katman (transandantal operatör yasağı)</td><td>ELEME</td><td>✅</td><td>yasaklı operatör yok</td></tr>
+<tr><td>F2 — ölçek simetrisi</td><td>ELEME</td><td>✅</td><td>bu problemde ölçek yasası yok/atlandı</td></tr>
+<tr><td>F3 — gürbüzlük + donanım güvenliği</td><td>ELEME</td><td>✅</td><td>güvenli</td></tr>
+<tr><td>F4 — numeroloji bariyeri (null test)</td><td>ELEME</td><td>✅</td><td>aday 7.013e-04 vs bariyer 1.375e-01 (karışık etiket en iyisi 6.875e-01 / 5)</td></tr>
+<tr><td>F5 — Hellmann-Feynman (dE/dZ = -&lt;1/r&gt;)</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+<tr><td>F6 — virial / eylem durağanlığı</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+<tr><td>F7 — ekstrapolasyon (eğitim dışı rejim)</td><td>DOĞRULAMA</td><td>✅</td><td>doğrulama hatası 7.013e-04 ≤ 8.0e-02</td></tr>
+<tr><td>F8 — referans eylem artığı</td><td>2&lt;T&gt;+&lt;V&gt;</td><td>/</td><td>E</td><td></td><td>DOĞRULAMA</td><td>✅</td><td>sayısal referans göreli artığı 5.64e-03</td></tr>
+<tr><td>F9 — türev tutarlılığı (kuvvet = −dE/dR)</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+</table>
+
+<p><b>Bilinen analitik limit karşılaştırması (yalnızca teşhis — seçimde kullanılmadı):</b></p>
+
+<li>küçük α için pertürbasyon serisi E(Z=1,α) = E₀ + c₁α + c₂α² (katsayılar bağımsız çözücüden)</li>
+
+<table>
+<tr><th>terim</th><th>bağımsız çözücü</th><th>keşfedilen formül</th><th>bağıl fark</th></tr>
+<tr><td>E(α→0)</td><td>-0.49998699</td><td>-0.50000000</td><td>2.602e-05</td></tr>
+<tr><td>dE/dα</td><td>0.99981966</td><td>1.00000000</td><td>1.804e-04</td></tr>
+<tr><td>d²E/dα²</td><td>-0.73262773</td><td>-0.66666667</td><td>9.003e-02</td></tr>
+</table>
+
+<p><b>Onur listesi (en iyiler):</b></p>
+
+<table>
+<tr><th>formül</th><th>maliyet</th><th>train</th><th>val</th><th>sınav</th><th>doğrulandı</th></tr>
+<tr><td><code>−(0.5·Z²) + Z·α + -0.666667·α²</code></td><td>7.0</td><td>2.970e-04</td><td>7.013e-04</td><td>9.597e-04</td><td>True</td></tr>
+<tr><td><code>−(0.5·Z²) + Z·α + -3·α³</code></td><td>8.0</td><td>7.560e-04</td><td>4.716e-03</td><td>2.379e-02</td><td>True</td></tr>
+<tr><td><code>-0.5·(Z + −α)²</code></td><td>3.0</td><td>1.234e-03</td><td>1.584e-03</td><td>4.053e-03</td><td>True</td></tr>
+<tr><td><code>-0.5·(Z − α)·(Z − α)</code></td><td>4.0</td><td>1.234e-03</td><td>1.584e-03</td><td>4.053e-03</td><td>True</td></tr>
+<tr><td><code>-0.479603·(Z − α)·(1.04156·Z − α)</code></td><td>5.0</td><td>5.085e-04</td><td>8.492e-04</td><td>1.865e-03</td><td>True</td></tr>
+<tr><td><code>-0.479507·(Z − α)·(1.04187·Z − α)</code></td><td>5.0</td><td>5.200e-04</td><td>9.094e-04</td><td>1.852e-03</td><td>True</td></tr>
+</table>
+
+<p>Şeffaflık — kullanılan fizik ön-bilgisi şablonları (bunlar cevap değil, boş kalıplardır): <code>-1·Z²/α²</code>, <code>Z²/(α²·2)</code>, <code>-1·Z/α²</code>, <code>Z/(α²·2)</code>, <code>1 − 1·Z/α²</code>, <code>−(Z²)/2 + 1·Z</code>, <code>-0.5·Z²/(α² + 0)</code>, <code>Z²/(α²·(1 + 0))</code>, <code>−(Z²)/2 + 1·Z·α</code>, <code>−(Z²)/2 + 1·Z·α + -1·α²</code>, <code>-0.5·(Z² + 2·Z·α)</code></p>
+
+
+<h3>Çok elektronlu atom enerjisi  E(Z, N)  (<code>cok_elektron</code>)</h3>
+
+<li>Değişkenler: <code>Z, N</code></li>
+<li>Nesil / değerlendirme: 35 / 4900</li>
+<li>Numeroloji bariyeri: 0.1820502550257997</li>
+<li><b>Keşfedilen en ucuz formül:</b> <code>-4·Z</code></li>
+<li>Python: <code>(-4.0 * Z)</code></li>
+<li>Maliyet: <b>1.0 işlem birimi</b>, düğüm=3, derinlik=2, 28.5 µs/1000 nokta</li>
+<li>Hatalar (göreli RMSE): eğitim=2.269e-01, doğrulama=3.852e-01, <b>sınav=5.763e-01</b>, en kötü bağıl sınav hatası=6.367e-01</li>
+<li>Doğrulandı mı: <b>False</b></li>
+
+<table>
+<tr><th>filtre</th><th>grup</th><th>sonuç</th><th>ayrıntı</th></tr>
+<tr><td>F1 — ucuz katman (transandantal operatör yasağı)</td><td>ELEME</td><td>✅</td><td>yasaklı operatör yok</td></tr>
+<tr><td>F2 — ölçek simetrisi (boyut analizi)</td><td>ELEME</td><td>❌</td><td>asimptotik üs → 2.0: sapma 1.00e+00 [normalize edilmiş artık]</td></tr>
+<tr><td>F3 — gürbüzlük + donanım güvenliği</td><td>ELEME</td><td>✅</td><td>güvenli</td></tr>
+<tr><td>F4 — numeroloji bariyeri (null test)</td><td>ELEME</td><td>❌</td><td>aday 3.852e-01 vs bariyer 3.641e-02 (karışık etiket en iyisi 1.821e-01 / 5)</td></tr>
+<tr><td>F5 — Hellmann-Feynman (dE/dZ = -&lt;1/r&gt;)</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+<tr><td>F6 — virial / eylem durağanlığı</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+<tr><td>F7 — ekstrapolasyon (eğitim dışı rejim)</td><td>DOĞRULAMA</td><td>❌</td><td>doğrulama hatası 3.852e-01 ≤ 2.0e-01</td></tr>
+<tr><td>F8 — referans eylem artığı</td><td>2&lt;T&gt;+&lt;V&gt;</td><td>/</td><td>E</td><td></td><td>DOĞRULAMA</td><td>✅</td><td>sayısal referans göreli artığı 5.64e-03</td></tr>
+<tr><td>F9 — türev tutarlılığı (kuvvet = −dE/dR)</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+</table>
+
+<p><b>Bilinen analitik limit karşılaştırması (yalnızca teşhis — seçimde kullanılmadı):</b></p>
+
+<li>2e serisi HF limiti: E ≈ −Z² + (5/8)Z − 0.1576664</li>
+<li>en büyük bağıl sapma: <b>7.012e-01</b>, ortalama: 5.998e-01</li>
+
+<p><b>Onur listesi (en iyiler):</b></p>
+
+<table>
+<tr><th>formül</th><th>maliyet</th><th>train</th><th>val</th><th>sınav</th><th>doğrulandı</th></tr>
+<tr><td><code>-4·Z</code></td><td>1.0</td><td>2.269e-01</td><td>3.852e-01</td><td>5.763e-01</td><td>False</td></tr>
+<tr><td><code>−((Z + -0.5)·Z)</code></td><td>2.0</td><td>5.004e-02</td><td>7.902e-02</td><td>1.005e-01</td><td>False</td></tr>
+<tr><td><code>-0.905275·Z·Z</code></td><td>2.0</td><td>5.806e-02</td><td>9.253e-02</td><td>1.300e-01</td><td>False</td></tr>
+<tr><td>`-4·</td><td>Z</td><td>`</td><td>2.0</td><td>2.269e-01</td><td>3.852e-01</td><td>5.763e-01</td><td>False</td></tr>
+<tr><td><code>-1·(-1 + Z²)</code></td><td>3.0</td><td>6.683e-02</td><td>6.449e-02</td><td>8.045e-02</td><td>False</td></tr>
+<tr><td><code>0.044627·(-17.3376 − N)·Z²</code></td><td>4.0</td><td>3.091e-02</td><td>6.730e-02</td><td>1.078e-01</td><td>False</td></tr>
+</table>
+
+<p>Şeffaflık — kullanılan fizik ön-bilgisi şablonları (bunlar cevap değil, boş kalıplardır): <code>−(Z²) + (1 + 1·N)·Z + 1·N</code>, <code>−(N/2·Z²) + (1 + 1·N)·Z + 1·N + 1·N²</code>, <code>(1 + 1/N)·Z² + 1·Z + 1</code>, <code>1·Z² + 1·Z·N + 1·N²</code></p>
+
+
+<h3>Kimyasal bağ enerji eğrisi  E_H2(R)  (<code>bag_h2</code>)</h3>
+
+<li>Değişkenler: <code>R</code></li>
+<li>Nesil / değerlendirme: 35 / 4900</li>
+<li>Numeroloji bariyeri: 0.07336549897416904</li>
+<li><b>Keşfedilen en ucuz formül:</b> <code>(-1.20662·|-0.0033976/(R²)² + -0.0496972·R + (-0.0213784/|R|² + 0.988096)³|)³</code></li>
+<li>Python: <code>((-1.2066156599166902 * np.abs((((-0.003397595144953856 / ((R<b>2)</b>2)) + (-0.0496971803777097 * R)) + (((-0.021378418113631 / (np.abs(R)<b>2)) + 0.988095940564523)</b>3))))**3)</code></li>
+<li>Maliyet: <b>20.0 işlem birimi</b>, düğüm=22, derinlik=10, 38.1 µs/1000 nokta</li>
+<li>Hatalar (göreli RMSE): eğitim=1.573e-05, doğrulama=6.032e-03, <b>sınav=4.306e-02</b>, en kötü bağıl sınav hatası=5.337e-02</li>
+<li>Doğrulandı mı: <b>True</b></li>
+
+<table>
+<tr><th>filtre</th><th>grup</th><th>sonuç</th><th>ayrıntı</th></tr>
+<tr><td>F1 — ucuz katman (transandantal operatör yasağı)</td><td>ELEME</td><td>✅</td><td>yasaklı operatör yok</td></tr>
+<tr><td>F2 — ölçek simetrisi</td><td>ELEME</td><td>✅</td><td>bu problemde ölçek yasası yok/atlandı</td></tr>
+<tr><td>F3 — gürbüzlük + donanım güvenliği</td><td>ELEME</td><td>✅</td><td>güvenli</td></tr>
+<tr><td>F4 — numeroloji bariyeri (null test)</td><td>ELEME</td><td>✅</td><td>aday 6.032e-03 vs bariyer 1.467e-02 (karışık etiket en iyisi 7.337e-02 / 5)</td></tr>
+<tr><td>F5 — Hellmann-Feynman (dE/dZ = -&lt;1/r&gt;)</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+<tr><td>F6 — virial / eylem durağanlığı</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+<tr><td>F7 — ekstrapolasyon (eğitim dışı rejim)</td><td>DOĞRULAMA</td><td>✅</td><td>doğrulama hatası 6.032e-03 ≤ 2.0e-02</td></tr>
+<tr><td>F8 — referans eylem artığı</td><td>2&lt;T&gt;+&lt;V&gt;</td><td>/</td><td>E</td><td></td><td>DOĞRULAMA</td><td>✅</td><td>sayısal referans göreli artığı 5.64e-03</td></tr>
+<tr><td>F9 — türev tutarlılığı (dE/dR = −F_ref)</td><td>DOĞRULAMA</td><td>✅</td><td>bağımsız kuvvet referansına karşı: 2.54e-02</td></tr>
+</table>
+
+<p><b>Bilinen analitik limit karşılaştırması (yalnızca teşhis — seçimde kullanılmadı):</b></p>
+
+<li>H₂ deneysel/BO: R_e ≈ 1.4011 a₀, k ≈ 0.3694 au, ω ≈ 4401 cm⁻¹</li>
+
+<p><b>Onur listesi (en iyiler):</b></p>
+
+<table>
+<tr><th>formül</th><th>maliyet</th><th>train</th><th>val</th><th>sınav</th><th>doğrulandı</th></tr>
+<tr><td>`(-1.20662·</td><td>-0.0033976/(R²)² + -0.0496972·R + (-0.0213784/</td><td>R</td><td>² + 0.988096)³</td><td>)³`</td><td>20.0</td><td>1.573e-05</td><td>6.032e-03</td><td>4.306e-02</td><td>True</td></tr>
+<tr><td>`(-1.2066·</td><td>-0.00342457/(R²)² + -0.0496155·R + (-0.0213437/R² + 0.988046)³</td><td>)³`</td><td>19.0</td><td>1.587e-05</td><td>5.959e-03</td><td>4.278e-02</td><td>True</td></tr>
+<tr><td><code>0.963131·(0.195865·R + 0.262136/R² + -1.57953)</code></td><td>8.0</td><td>1.614e-04</td><td>7.749e-03</td><td>4.310e-02</td><td>False</td></tr>
+<tr><td><code>-1.76133 + -0.809746·R + 0.253295/R² + 0.237517 + R</code></td><td>9.0</td><td>1.706e-04</td><td>8.252e-03</td><td>4.510e-02</td><td>False</td></tr>
+<tr><td><code>0.93996·(0.200208·(R + 0.79551) + 0.268351/R² + -1.77698)</code></td><td>9.0</td><td>1.621e-04</td><td>7.611e-03</td><td>4.253e-02</td><td>False</td></tr>
+<tr><td><code>1.02431·(0.184154·(R + 0.741611) + 0.246473/R² + -1.62174)</code></td><td>9.0</td><td>1.614e-04</td><td>7.745e-03</td><td>4.308e-02</td><td>False</td></tr>
+</table>
+
+<p>Şeffaflık — kullanılan fizik ön-bilgisi şablonları (bunlar cevap değil, boş kalıplardır): <code>(1 + 1·R)/(1 + 1·R + 1·R²)²</code>, <code>(1 + 1·R + 1·R²)/(1 + 1·R + 1·R²)</code>, <code>1 + 1/R + 1/R² + 1/(R²·R)</code>, <code>1/(R²·(R²)²) + −(1/(R²)²) + -1/R² + 1</code></p>
+
+
+<h3>Kuvvet alanı  F(R) = −dE_H2/dR  (<code>kuvvet_h2</code>)</h3>
+
+<li>Değişkenler: <code>R</code></li>
+<li>Nesil / değerlendirme: 35 / 4900</li>
+<li>Numeroloji bariyeri: 0.10745603615901245</li>
+<li><b>Keşfedilen en ucuz formül:</b> <code>0.718332·(1.38313 − R)·(1.52011 − 0.314564·R)/(0.0387652 + R²)</code></li>
+<li>Python: <code>(0.7183323049631826 * ((1.3831256297093704 - R) * ((1.5201145917574057 - (0.31456359006249995 * R)) / (0.03876520980828281 + (R**2)))))</code></li>
+<li>Maliyet: <b>10.0 işlem birimi</b>, düğüm=16, derinlik=6, 27.2 µs/1000 nokta</li>
+<li>Hatalar (göreli RMSE): eğitim=5.855e-05, doğrulama=8.041e-03, <b>sınav=1.452e-01</b>, en kötü bağıl sınav hatası=1.658e-01</li>
+<li>Doğrulandı mı: <b>True</b></li>
+
+<table>
+<tr><th>filtre</th><th>grup</th><th>sonuç</th><th>ayrıntı</th></tr>
+<tr><td>F1 — ucuz katman (transandantal operatör yasağı)</td><td>ELEME</td><td>✅</td><td>yasaklı operatör yok</td></tr>
+<tr><td>F2 — ölçek simetrisi</td><td>ELEME</td><td>✅</td><td>bu problemde ölçek yasası yok/atlandı</td></tr>
+<tr><td>F3 — gürbüzlük + donanım güvenliği</td><td>ELEME</td><td>✅</td><td>güvenli</td></tr>
+<tr><td>F4 — numeroloji bariyeri (null test)</td><td>ELEME</td><td>✅</td><td>aday 8.041e-03 vs bariyer 2.149e-02 (karışık etiket en iyisi 1.075e-01 / 5)</td></tr>
+<tr><td>F5 — Hellmann-Feynman (dE/dZ = -&lt;1/r&gt;)</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+<tr><td>F6 — virial / eylem durağanlığı</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+<tr><td>F7 — ekstrapolasyon (eğitim dışı rejim)</td><td>DOĞRULAMA</td><td>✅</td><td>doğrulama hatası 8.041e-03 ≤ 8.0e-02</td></tr>
+<tr><td>F8 — referans eylem artığı</td><td>2&lt;T&gt;+&lt;V&gt;</td><td>/</td><td>E</td><td></td><td>DOĞRULAMA</td><td>✅</td><td>sayısal referans göreli artığı 5.64e-03</td></tr>
+<tr><td>F9 — türev tutarlılığı (eş keşif: −dE/dR vs F)</td><td>DOĞRULAMA</td><td>✅</td><td>enerji keşfi ile kuvvet keşfi uyumu: 2.63e-02</td></tr>
+</table>
+
+<p><b>Bilinen analitik limit karşılaştırması (yalnızca teşhis — seçimde kullanılmadı):</b></p>
+
+<li>F(R_e) = 0 (denge) ve F(R) &lt; 0 (R &gt; R_e&#x27;de çekici)</li>
+
+<p><b>Onur listesi (en iyiler):</b></p>
+
+<table>
+<tr><th>formül</th><th>maliyet</th><th>train</th><th>val</th><th>sınav</th><th>doğrulandı</th></tr>
+<tr><td><code>0.718332·(1.38313 − R)·(1.52011 − 0.314564·R)/(0.0387652 + R²)</code></td><td>10.0</td><td>5.855e-05</td><td>8.041e-03</td><td>1.452e-01</td><td>True</td></tr>
+<tr><td><code>0.722119·(1.38332 − R)·(1.52076 − 0.320082·R)/(0.0405463 + R²)</code></td><td>10.0</td><td>2.239e-05</td><td>9.026e-03</td><td>1.603e-01</td><td>True</td></tr>
+<tr><td><code>0.722492·(1.38334 − R)·(1.52082 − 0.320623·R)/(0.040722 + R²)</code></td><td>10.0</td><td>2.138e-05</td><td>9.123e-03</td><td>1.618e-01</td><td>True</td></tr>
+<tr><td><code>0.717204·(1.38307 − R)·(1.51992 − 0.312909·R)/(0.0382349 + R²)</code></td><td>10.0</td><td>7.194e-05</td><td>7.747e-03</td><td>1.407e-01</td><td>True</td></tr>
+<tr><td><code>0.721786·(1.3833 − R)·(1.5207 − 0.319598·R)/(0.0403894 + R²)</code></td><td>10.0</td><td>2.403e-05</td><td>8.940e-03</td><td>1.590e-01</td><td>True</td></tr>
+<tr><td><code>0.721972·(1.38331 − R)·(1.52073 − 0.319868·R)/(0.0404769 + R²)</code></td><td>10.0</td><td>2.304e-05</td><td>8.988e-03</td><td>1.597e-01</td><td>True</td></tr>
+</table>
+
+<p>Şeffaflık — kullanılan fizik ön-bilgisi şablonları (bunlar cevap değil, boş kalıplardır): <code>(1 + 1·R)/(1 + 1·R + 1·R²)²</code>, <code>(1 + 1·R + 1·R²)/(1 + 1·R + 1·R²)</code>, <code>1 + 1/R + 1/R² + 1/(R²·R)</code>, <code>1/(R²·(R²)²) + −(1/(R²)²) + -1/R² + 1</code></p>
+
+
+<h3>Tek elektronlu iki merkez: ölçek yasası  ε(R, Z)  (<code>h2plus_olcek</code>)</h3>
+
+<li>Değişkenler: <code>R, Z</code></li>
+<li>Nesil / değerlendirme: 35 / 4900</li>
+<li>Numeroloji bariyeri: 0.34649463849407725</li>
+<li><b>Keşfedilen en ucuz formül:</b> <code>Z²·(-4.73037 + -3.61398·Z·R + -0.574469·(Z·R)²)/(2.30422 + 2.34747·Z·R + 1.52173·(Z·R)²)</code></li>
+<li>Python: <code>((Z<b>2) * (((-4.7303720835340926 + (-3.613984138692854 * (Z * R))) + (-0.5744691060928111 * ((Z * R)</b>2))) / ((2.3042212748512 + (2.347469979405811 * (Z * R))) + (1.5217289676481724 * ((Z * R)**2)))))</code></li>
+<li>Maliyet: <b>19.0 işlem birimi</b>, düğüm=32, derinlik=7, 61.6 µs/1000 nokta</li>
+<li>Hatalar (göreli RMSE): eğitim=3.302e-04, doğrulama=2.761e-02, <b>sınav=8.578e-02</b>, en kötü bağıl sınav hatası=9.689e-02</li>
+<li>Doğrulandı mı: <b>False</b></li>
+
+<table>
+<tr><th>filtre</th><th>grup</th><th>sonuç</th><th>ayrıntı</th></tr>
+<tr><td>F1 — ucuz katman (transandantal operatör yasağı)</td><td>ELEME</td><td>✅</td><td>yasaklı operatör yok</td></tr>
+<tr><td>F2 — ölçek simetrisi (boyut analizi)</td><td>ELEME</td><td>✅</td><td>ölçek eşzamanlı(Z×λ, R×λ^-1.0): en kötü sapma 3.33e-16 (tolerans 5e-02) [normalize edilmiş artık]</td></tr>
+<tr><td>F3 — gürbüzlük + donanım güvenliği</td><td>ELEME</td><td>✅</td><td>güvenli</td></tr>
+<tr><td>F4 — numeroloji bariyeri (null test)</td><td>ELEME</td><td>✅</td><td>aday 2.761e-02 vs bariyer 6.930e-02 (karışık etiket en iyisi 3.465e-01 / 5)</td></tr>
+<tr><td>F5 — Hellmann-Feynman (dE/dZ = -&lt;1/r&gt;)</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+<tr><td>F6 — virial / eylem durağanlığı</td><td>DOĞRULAMA</td><td>✅</td><td>uygulanamaz</td></tr>
+<tr><td>F7 — ekstrapolasyon (eğitim dışı rejim)</td><td>DOĞRULAMA</td><td>✅</td><td>doğrulama hatası 2.761e-02 ≤ 2.0e-01</td></tr>
+<tr><td>F8 — referans eylem artığı</td><td>2&lt;T&gt;+&lt;V&gt;</td><td>/</td><td>E</td><td></td><td>DOĞRULAMA</td><td>✅</td><td>sayısal referans göreli artığı 5.64e-03</td></tr>
+<tr><td>F9 — türev tutarlılığı (dE/dR = −F_ref)</td><td>DOĞRULAMA</td><td>❌</td><td>bağımsız kuvvet referansına karşı: 2.02e-01</td></tr>
+</table>
+
+<p><b>Bilinen analitik limit karşılaştırması (yalnızca teşhis — seçimde kullanılmadı):</b></p>
+
+<li>H₂⁺: ε(R→∞, Z=1) → −1/2 Hartree (H atomu limiti); ölçek yasası ε(R,Z)=Z²·ε(ZR,1)</li>
+
+<p><b>Onur listesi (en iyiler):</b></p>
+
+<table>
+<tr><th>formül</th><th>maliyet</th><th>train</th><th>val</th><th>sınav</th><th>doğrulandı</th></tr>
+<tr><td><code>Z²·(-4.73037 + -3.61398·Z·R + -0.574469·(Z·R)²)/(2.30422 + 2.34747·Z·R + 1.52173·(Z·R)²)</code></td><td>19.0</td><td>3.302e-04</td><td>2.761e-02</td><td>8.578e-02</td><td>False</td></tr>
+<tr><td><code>Z²·(-4.70638 + -3.6432·Z·R + -0.577626·(Z·R)²)/(2.294 + 2.35276·Z·R + 1.53244·(Z·R)²)</code></td><td>19.0</td><td>3.334e-04</td><td>2.773e-02</td><td>8.611e-02</td><td>False</td></tr>
+<tr><td><code>Z²·(-7.71586 + −(3.09781·Z·R) + -0.57392·(Z·R)²)/(3.66745 + 2.82775·Z·R + 1.38812·(Z·R)²)</code></td><td>19.0</td><td>2.674e-04</td><td>2.106e-02</td><td>6.678e-02</td><td>False</td></tr>
+<tr><td><code>Z²·(-7.37043 + −(3.11479·Z·R) + -0.568773·(Z·R)²)/(3.5086 + 2.75628·Z·R + 1.38741·(Z·R)²)</code></td><td>19.0</td><td>2.642e-04</td><td>2.164e-02</td><td>6.853e-02</td><td>False</td></tr>
+<tr><td><code>Z²·(-7.36748 + −(3.13326·Z·R) + -0.571355·(Z·R)²)/(3.50804 + 2.76178·Z·R + 1.39498·(Z·R)²)</code></td><td>19.0</td><td>2.639e-04</td><td>2.170e-02</td><td>6.871e-02</td><td>False</td></tr>
+<tr><td><code>Z²·(-7.71799 + −(3.0949·Z·R) + -0.562509·(Z·R)²)/(3.65893 + 2.84778·Z·R + 1.36866·(Z·R)²)</code></td><td>19.0</td><td>2.822e-04</td><td>2.187e-02</td><td>6.870e-02</td><td>False</td></tr>
+</table>
+
+<p>Şeffaflık — kullanılan fizik ön-bilgisi şablonları (bunlar cevap değil, boş kalıplardır): <code>Z²·(1 + 1·Z·R)/(1 + 1·Z·R)</code>, <code>Z²·(1 + 1·Z·R + 1·(Z·R)²)/(1 + 1·Z·R + 1·(Z·R)²)</code>, <code>−(1/2·Z²) + 1·Z/R</code>, <code>-1·Z² + 1·Z/R + 1</code></p>
+
+<h2>Trilyon ölçeği muhasebesi</h2>
+
+<li>Formül: <code>-0.5·(Z/n)²</code> (maliyet 5.0 işlem/atom)</li>
+<li>Gerçek koşu: <b>200,000,000 atom</b>, 2.334 s, <b>11.67 ns/atom</b>, 0.43 GFLOP/s</li>
+<li>Bellek: tepe RSS 182 MB (öbek=2,000,000 → bellek O(öbek), atom sayısıyla büyümez)</li>
+<li>Sayısal güvenlik: NaN/inf sayısı = 0, E ∈ [-32, -0.0078125] Hartree</li>
+
+<table>
+<tr><th>atom</th><th>tahmini süre (tek çekirdek, dışdeğerleme)</th><th>işlem sayısı</th><th>tahmini enerji (J)</th></tr>
+<tr><td>1e+06</td><td>11.7 ms</td><td>5.000e+06</td><td>4e-05</td></tr>
+<tr><td>1e+09</td><td>11.7 s</td><td>5.000e+09</td><td>0.04</td></tr>
+<tr><td>1e+12</td><td>3.2 saat</td><td>5.000e+12</td><td>40</td></tr>
+</table>
+
+<li>Pahalı yol (sayısal çözücü) referansı: 40001 ızgara noktası, 0.100 s/yapılandırma → işlem başına hızlanma ≈ <b>1.6e+08×</b>, süre hızlanması ≈ <b>8.6e+06×</b></li>
+<li>Varsayımlar: Süreler ÖLÇÜLEN ns/atom üzerinden doğrusal dışdeğerlemedir. Bellek, öbek akışı sayesinde atom sayısıyla büyümez (O(chunk)). Bu bir tek-atom topluluk simülasyonudur; tam çok-cisimli kuantum simülasyonu değildir.</li>
+
+<h2>Dürüstlük notları</h2>
+
+<li>Referans veri kapalı formdan DEĞİL, sonlu farklar özdeğer çözümünden gelir; ızgara yakınsaması ve varyasyonel eylem durağanlığı ile doğrulanmıştır.</li>
+<li>Sınav (test) kümesi eğitim bölgesinin dışındadır ve yalnızca rapor aşamasında bir kez ölçülür.</li>
+<li>Numeroloji bariyeri: aynı mimari etiketleri karıştırılmış veride çalıştırılmış, elde edilen en iyi hatanın 5 katı altına inmeyen aday elenmiştir.</li>
+<li>Trilyon atom ölçeği bir TOPLULUK (tek-atom durumlarının ortalaması) simülasyonudur; tam çok-cisimli kuantum durumu hesabı değildir.</li></body></html>

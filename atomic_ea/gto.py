@@ -505,14 +505,20 @@ def h2plus_energy(R: float, Z: float = 1.0, K1: int = 3, K2: int = 2,
         right = two_block([+R / 2, 0, 0], aa1, bb1, K1, aa2, bb2, K2)
         return left + right
 
+    def solve(p):
+        """(E_tot, <1/r_1 + 1/r_2>) — ikincisi Hellmann-Feynman için bağımsız referans."""
+        S, T, V, _ = build_matrices(build(p), charges, want_eri=False)
+        H = T + V
+        w, U = np.linalg.eigh(S)
+        X = U @ np.diag(w ** -0.5) @ U.T
+        wv, Uv = np.linalg.eigh(X.T @ H @ X)
+        v = X @ Uv[:, 0]
+        inv_r = float(v @ V @ v) / (-Z)          # <V_ne> = -Z·<1/r_1+1/r_2>
+        return float(wv[0]) + Z * Z / R, abs(inv_r)
+
     def energy(p):
         try:
-            S, T, V, _ = build_matrices(build(p), charges, want_eri=False)
-            H = T + V
-            w, U = np.linalg.eigh(S)
-            X = U @ np.diag(w ** -0.5) @ U.T
-            eps = np.linalg.eigvalsh(X.T @ H @ X)
-            return float(eps[0]) + Z * Z / R
+            return solve(p)[0]
         except Exception:
             return 10.0
 
@@ -527,8 +533,10 @@ def h2plus_energy(R: float, Z: float = 1.0, K1: int = 3, K2: int = 2,
     w, U = np.linalg.eigh(S)
     X = U @ np.diag(w ** -0.5) @ U.T
     eps = np.linalg.eigvalsh(X.T @ H @ X)
-    return {"E": float(eps[0]) + Z * Z / R, "eps1": float(eps[0]),
-            "basis": [float(x) for x in p], "E_nuc": Z * Z / R}
+    E_tot, inv_r = solve(p)
+    return {"E": E_tot, "eps1": E_tot - Z * Z / R,
+            "basis": [float(x) for x in p], "E_nuc": Z * Z / R,
+            "inv_r": inv_r, "V_ne": -Z * inv_r, "T": E_tot - Z * Z / R + Z * inv_r}
 
 
 # ------------------------------------------------------------------ H2 (kapalı kabuk, iki merkez)

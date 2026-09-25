@@ -45,16 +45,60 @@ imkânsız) ve kabuk formunun “numerolojik tesadüf” olarak veriye uydurulma
 <tr><td>F2</td><td>ölçek simetrisi (boyut analizi)</td><td>Üç kip: (i) <code>E(λx)=λᵖE(x)</code>, (ii) <b>eşzamanlı</b> dönüşüm <code>R→R/λ, Z→λZ</code> (iki değişken birlikte), (iii) <b>asimptotik üs</b> <code>d log|y|/d log x → p</code> (ör. Z→∞ için 2)</td><td>eleme</td></tr>
 <tr><td>F3</td><td>donanım güvenliği</td><td>NaN/inf yok, |sabit|≤10⁶, |değer|≤10¹², NaN’a açık gerçel kuvvet yok, 1000 nokta ≤ 400 µs</td><td>eleme</td></tr>
 <tr><td>F4</td><td>numeroloji bariyeri</td><td>aynı mimari ETİKETLERİ KARIŞTIRILMIŞ veride çalıştırılır; en iyi hatanın 5 katı altına inmeyen aday elenir</td><td>eleme</td></tr>
-<tr><td>F5</td><td>Hellmann–Feynman</td><td>dE/dZ = −⟨1/r⟩ (bağımsız sayısal referansa karşı, ≤1%)</td><td>doğrulama</td></tr>
-<tr><td>F6</td><td>virial / eylem durağanlığı</td><td>E = −(Z/2)⟨1/r⟩ ⇒ eylem ilkesi kısıtı (≤1%)</td><td>doğrulama</td></tr>
+<tr><td>F5</td><td>Hellmann–Feynman</td><td>dE/dZ = −⟨1/r⟩ (bağımsız sayısal referansa karşı). Çok elektronlu atomda <b>eleme</b> (≤5%); tek elektronluda rapor (≤1%)</td><td>eleme/doğrulama</td></tr>
+<tr><td>F6</td><td>virial / eylem durağanlığı</td><td>Atom: E = −(Z/2)⟨1/r⟩ (≤1%). Molekül: genelleştirilmiş virial <code>T = −E − R·dE/dR</code> bağımsız çözücünün T’sine karşı, <b>eleme</b> (≤2%)</td><td>eleme/doğrulama</td></tr>
 <tr><td>F7</td><td>ekstrapolasyon</td><td>eğitim bölgesinin DIŞINDAKİ doğrulama rejiminde ≤ 4×tolerans</td><td>doğrulama</td></tr>
 <tr><td>F8</td><td>referans güvenilirliği</td><td>sayısal çözücünün göreli eylem artığı &lt; 1%</td><td>doğrulama</td></tr>
-<tr><td>F9</td><td>türev tutarlılığı (kuvvet = −dE/dR)</td><td>İki yol: (a) adayın sayısal türevi BAĞIMSIZ hesaplanan kuvvet referansına uymalı;
-      (b) iki AYRI keşif bağlanır: kuvvet adayı ≈ −d/dR(enerji şampiyonu). Yalnız eğri uydurarak sağlanamaz (≤3%)</td><td>doğrulama</td></tr>
+<tr><td>F9</td><td>türev tutarlılığı (kuvvet = −dE/dR)</td><td>İki yol: (a) adayın sayısal türevi BAĞIMSIZ hesaplanan kuvvet referansına uymalı (<b>eleme</b>, ≤3%);
+      (b) iki AYRI keşif bağlanır: kuvvet adayı ≈ −d/dR(enerji şampiyonu). Yalnız eğri uydurarak sağlanamaz</td><td>eleme/doğrulama</td></tr>
+<tr><td>F10</td><td>elektron–elektron itmesi</td><td>Virial + Hellmann–Feynman’den ÇIKARILAN örtük itme <code>V_ee = 2E − Z·∂E/∂Z</code> bağımsız çözücünün V_ee’siyle (≤5%) ve <code>min V_ee &gt; 0</code> olmalı — <b>eleme</b></td><td>eleme</td></tr>
+<tr><td>F11</td><td>elektron sayısı tepkisi</td><td>İzoelektronik çiftte formülün farkı <code>f(Z,4)−f(Z,2)</code> bağımsız çözücünün ΔE’siyle uyuşmalı (≤5%) — elektronları formülden silen adaylar ölür — <b>eleme</b></td><td>eleme</td></tr>
 </table>
 <p class="small">F9, “hile yok” ilkesinin en güçlü testidir: enerji ve kuvvet iki bağımsız evrim koşusunda ayrı ayrı
 keşfedilir; aralarındaki ilişki yalnızca mekanikten (Hellmann–Feynman) gelir. Eğri uyduran bir aday bu testi geçemez.</p>
 <p class="warn">Sınav (test) kümesi hiçbir filtrede ve hiçbir seçim adımında kullanılmaz; yalnızca nihai raporda bir kez ölçülür.</p>
+
+
+<h2>2b. Kuantum koruma: teoremler aramada zorunlu (yeni)</h2>
+<p>Ölçülen bir başarısızlık: EA, çok elektronlu atomda ve H₂ bağında <b>N ve elektron–elektron itmesini
+formülden silerek</b> çok ucuz ama fiziksel olarak imkânsız formüller üretiyordu (ör. 47. bulut koşusunun
+şampiyonu <code>(0.5 − Z)·Z</code>: elektron sayısı yok, ∂E/∂Z yanlış). Teoremler yalnız “doğrulama”
+etiketliyse ceza vermiyordu; bu yüzden <b>kuantum teoremleri arama düzeyinde yaptırıma bağlandı</b>.</p>
+<table>
+<tr><th>jüri</th><th>yasa</th><th>tolerans</th><th>grup</th></tr>
+<tr><td>F5</td><td>Hellmann–Feynman: ∂E/∂Z = −⟨Σ1/r⟩</td><td>5×10⁻²</td><td>eleme</td></tr>
+<tr><td>F10</td><td>örtük e–e itmesi: V_ee = 2E − Z·∂E/∂Z, ayrıca min V_ee &gt; 0</td><td>5×10⁻²</td><td>eleme</td></tr>
+<tr><td>F11</td><td>elektron sayısı tepkisi: ΔE(2→4) bağımsız çözücüyle</td><td>5×10⁻²</td><td>eleme</td></tr>
+<tr><td>F6</td><td>moleküler virial: T = −E − R·dE/dR</td><td>2×10⁻²</td><td>eleme</td></tr>
+<tr><td>F9</td><td>kuvvet tutarlılığı: dE/dR = −F_ref</td><td>3×10⁻²</td><td>eleme</td></tr>
+</table>
+<p><b>Üç katmanlı yaptırım</b> (yalnız ceza değil, “yasayı bilen arama”):</p>
+<ul>
+  <li><b>1) Jüri-farkında sabit ayarı.</b> Her adayın sabitleri Gauss–Newton ile hem veriye hem jüri
+      kısıtlarına göre ayarlanır (kısıtlar formülün kendi tahminleri üzerinde doğrusal — sonlu fark —
+      operatörlerdir; referanslar bağımsız çözücüden gelir ve yalnız <b>eğitim+doğrulama</b> noktalarında
+      kullanılır). Böylece EA, yasayı sağlayan katsayı kümesini <i>arar</i>.</li>
+  <li><b>2) Kademeli ceza.</b> Onarımdan sonra ihlal sürüyorsa skor <code>+0.15·(v−1)</code> alır,
+      burada <code>v = max(hata/tolerans)</code>. Evrim ihlali azaltmaya yönlendirilir.</li>
+  <li><b>3) Ağır ihlalde ∞.</b> <code>v &gt; 30</code> ise aday anında ölür (seçilme olasılığı sıfır).</li>
+</ul>
+<p class="small">Jüri kümesi <b>yalnız eğitim+doğrulama</b> noktalarından kurulur; sınav (Z ≥ 8 ekstrapolasyonu)
+kümesi jürinin de dışındadır — kuantum kısıtları evrensel yasalardır, veri sızıntısı değildir.</p>
+<h3>Ölçülen sonuç: eski şampiyonlar elendi, fizik-uyumlu aile geçti</h3>
+<table>
+<tr><th>aday</th><th>F5</th><th>F10</th><th>F11</th><th>karar</th></tr>
+<tr><td><code>(0.5 − Z)·Z</code> (47. koşu şampiyonu, çok elektronlu)</td><td>1.06×10⁻¹</td><td>5.52×10⁻¹</td><td>1.00×10⁰</td><td class="bad">ELENDİ</td></tr>
+<tr><td><code>−1·√√R</code> (47. koşu şampiyonu, H₂ bağı)</td><td>F6 1.29</td><td>—</td><td>F9 8.2×10⁻¹</td><td class="bad">ELENDİ</td></tr>
+<tr><td>izoelektronik aile (yeni koşu şampiyonu)</td><td>1.5×10⁻⁴</td><td>1.5×10⁻³</td><td>1.1×10⁻³</td><td class="good">GEÇTİ · DOĞRULANDI</td></tr>
+<tr><td>rasyonel (Padé) H₂ ailesi (yeni koşu şampiyonu)</td><td>F6 ✓</td><td>—</td><td>F9 9.0×10⁻³</td><td class="good">GEÇTİ · DOĞRULANDI</td></tr>
+</table>
+<p class="small">Ayrıca ölçek filtresi F2’nin asimptotik kontrolü düzeltildi: izoelektronik seride
+<b>Z→∞ limiti</b> (Z = 16…32) sınanır, çünkü alt-başat terimler sonlu Z’de üssü kaydırır ve doğru aileyi
+haksız eliyordu.</p>
+<p class="warn">Kapsam notu: H₂⁺ ölçek benchmarkında F5 jürisi <b>rapor</b> modundadır (o benchmark’ın Z ızgarası
+{1, 1.5, 2} jüriyi ayrıştırmaya yetmiyor); orada elemeyi F9 (kuvvet tutarlılığı) taşır. Tek elektronlu
+benchmarklarda (enerji, ters_yarıçap, etkin_potansiyel, yukawa) bu jüri uygulanamaz — spec yoksa filtre
+“uygulanamaz” döner, sessizce geçmez.</p>
 
 <h2>3. Uygunluk fonksiyonu (neden “en ucuz”)</h2>
 <p><code>skor = log₁₀( max(hata, gürültü_tabanı) ) + cₘ · maliyet/bütçe</code></p>
@@ -67,7 +111,8 @@ Transandantaller donanımda ~10–50× daha pahalı ve güç yoğunluğu yüksek
 <h2>4. Arama motoru</h2>
 <ul>
   <li>Ada modeli (3 ada, göç) + turnuva seçimi + elbow çaprazlama + 5 mutasyon operatörü (değişim, sarma, budama, sabit, alt-ağaç).</li>
-  <li><b>Sayısal sabit ayarı:</b> her bireyde Gauss–Newton (LM benzeri) ile sabitler veriye oturtulur.</li>
+  <li><b>Sayısal sabit ayarı:</b> her bireyde Gauss–Newton (LM benzeri) ile sabitler <b>veriye + kuantum
+      jürisine</b> birlikte oturtulur (bkz. 2b). İhlal sürerse kademeli ceza; ağır ihlalde ∞.</li>
   <li><b>MDL sabit yuvarlama:</b> tüm sabitler birden, “en kısa tanım” ölçütüyle basit rasyonel değerlere çekilir;
       veri uygunluğu gürültü tabanının üstüne çıkarsa yuvarlama reddedilir. Böylece “0.995321/(−1.99074)” gibi
       uydurma basamaklar “−1/2”ye indirgenir.</li>

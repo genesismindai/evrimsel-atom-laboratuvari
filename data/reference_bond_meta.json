@@ -11,7 +11,7 @@
     "Z=10": 0.000511105882040528
   },
   "iki_elektron_1Z_acilim_notu": "Kapalı kabuk 2e serisi, HF limitinin analitik 1/Z açılımı E = -Z² + (5/8)Z - 0.1576664 + O(1/Z) ile karşılaştırılır. Sapma Z büyüdükçe küçülür (Z=2: 1.6e-2 → Z=10: 5.1e-4); bu, açılımın 1/Z kesilmesinden kaynaklanır. Taban hatasının üst sınırı: Z=10'da ≤5e-4 bağıl.",
-  "checksum_sha256": "26a1b27d21a18ebed3c8ee5d4cbf2dbeaf69c09fc3a1997aa094223edf1e6056",
+  "checksum_sha256": "e64b4520f3f5d1c0856e2ce741ead893629e35b196f642dd104d861f9a940b1b",
   "n_h2": 18,
   "n_h2plus": 30,
   "n_atoms": 24,
@@ -42,11 +42,11 @@
     "dev": 150.02801252698555
   },
   "H2plus_E_R2": {
-    "calc": -0.590714226862695,
+    "calc": -0.5907142268626915,
     "lit": -0.602634,
-    "dev": 0.011919773137304968
+    "dev": 0.01191977313730852
   },
-  "H2plus_scaling_residual": 7.27774858093007e-15,
+  "H2plus_scaling_residual": 5.292908058858223e-15,
   "atom_HF_checks": {
     "E(2,2)": -2.8616369116562437,
     "E(4,4)": -14.570718560947466,

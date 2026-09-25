@@ -78,7 +78,14 @@ def h2_curve(Rs: Sequence[float], with_force: bool = True,
     """H2 (2 elektron) HF bağ eğrisi + kuvvet (bağımsız sonlu fark)."""
     opts = gto.h2_energy(basis_at, optimize=True, K1=K1, K2=K2)
     p = tuple(opts["basis"])
-    E = np.array([gto.h2_energy(float(R), basis_params=p, K1=K1, K2=K2)["E"] for R in Rs])
+    recs = [gto.h2_energy(float(R), basis_params=p, K1=K1, K2=K2) for R in Rs]
+    E = np.array([r["E"] for r in recs])
+    # Bağımsız kuantum büyüklükleri (jüri için): kinetik, çekirdek çekimi,
+    # elektron-elektron itmesi, nükleer itme.
+    T_arr = np.array([float(r["T"]) for r in recs])
+    Vne_arr = np.array([float(r["V_ne"]) for r in recs])
+    Vee_arr = np.array([float(r["V_ee"]) for r in recs])
+    Enuc_arr = np.array([float(r["E_nuc"]) for r in recs])
     F = np.zeros_like(E)
     if with_force:
         h = 3e-3
@@ -86,7 +93,8 @@ def h2_curve(Rs: Sequence[float], with_force: bool = True,
             Ep = gto.h2_energy(float(R) + h, basis_params=p, K1=K1, K2=K2)["E"]
             Em = gto.h2_energy(max(float(R) - h, 0.1), basis_params=p, K1=K1, K2=K2)["E"]
             F[i] = -(Ep - Em) / (2.0 * h)          # F = -dE/dR
-    return {"R": np.array(Rs), "E": E, "F": F, "basis": np.array(p)}
+    return {"R": np.array(Rs), "E": E, "F": F, "basis": np.array(p),
+            "T": T_arr, "V_ne": Vne_arr, "V_ee": Vee_arr, "E_nuc": Enuc_arr}
 
 
 def _opt_h2plus(R: float, Z: float, p0: Sequence[float], maxiter: int = 40,
@@ -145,15 +153,19 @@ def h2plus_curve(Rs: Sequence[float], Zs: Sequence[float] = (1.0,),
     Rf, Zf = Rg.ravel(), Zg.ravel()
     E = np.zeros_like(Rf)
     F = np.zeros_like(Rf)
+    INVR = np.zeros_like(Rf)          # <1/r_1 + 1/r_2>: Hellmann-Feynman jürisi
     h = 2e-3
     for i, (r, z) in enumerate(zip(Rf, Zf)):
         q = per_Z[float(z)][int(np.where(Rs_a == r)[0][0])]
-        E[i] = gto.h2plus_energy(float(r), Z=float(z), a1=q[0], b1=q[1], a2=q[2], b2=q[3])["E"]
+        base = gto.h2plus_energy(float(r), Z=float(z), a1=q[0], b1=q[1], a2=q[2], b2=q[3])
+        E[i] = base["E"]
+        INVR[i] = float(base["inv_r"])
         ep = gto.h2plus_energy(float(r) + h, Z=float(z), a1=q[0], b1=q[1], a2=q[2], b2=q[3])["E"]
         em = gto.h2plus_energy(max(float(r) - h, 0.05), Z=float(z),
                                a1=q[0], b1=q[1], a2=q[2], b2=q[3])["E"]
         F[i] = -(ep - em) / (2.0 * h)
-    return {"R": Rf, "Z": Zf, "E": E, "F": F, "basis": np.array(base_seed)}
+    return {"R": Rf, "Z": Zf, "E": E, "F": F, "inv_r": INVR,
+            "basis": np.array(base_seed)}
 
 
 def atom_series(Zs: Sequence[float], Ns: Sequence[int],
@@ -171,24 +183,28 @@ def atom_series(Zs: Sequence[float], Ns: Sequence[int],
     kabuk serileri için geniş taban kullanılır (hedef: bağıl hata ≲1e-4).
     """
     Zl, Nl, El, eps = [], [], [], []
+    Tl, Vnel, Veel, Invl = [], [], [], []      # bağımsız kuantum büyüklükleri (jüri)
     for Z in Zs:
         for N in Ns:
             if N > Z:
                 continue
             if N % 2 == 0:
                 r = gto.atom_hf(float(Z), int(N), K1=K1, K2=K2)
-                E = float(r["E"])
                 e = float(r["eps"][0])
                 vir = abs(float(r["virial_residual"]))
-                print(f"[atom] Z={int(Z)} N={N}  E={E:.6f}  virial artığı={vir:.1e}", flush=True)
             else:
                 r = gto.li_hf(float(Z))
-                E = float(r["E"])
                 e = float(r["eps_2s"])
                 vir = abs(float(r["virial_residual"]))
-                print(f"[atom] Z={int(Z)} N={N}  E={E:.6f}  (Li-benzeri, dondurulmuş çekirdek)", flush=True)
+            E = float(r["E"])
+            T_ = float(r["T"]); Vne_ = float(r["V_ne"]); Vee_ = float(r["V_ee"])
+            print(f"[atom] Z={int(Z)} N={N}  E={E:.6f}  T={T_:.5f} V_ne={Vne_:.5f} "
+                  f"V_ee={Vee_:.5f}  virial artığı={vir:.1e}", flush=True)
             Zl.append(float(Z)); Nl.append(int(N)); El.append(E); eps.append(e)
-    return {"Z": np.array(Zl), "N": np.array(Nl), "E": np.array(El), "eps_homo": np.array(eps)}
+            Tl.append(T_); Vnel.append(Vne_); Veel.append(Vee_); Invl.append(-Vne_ / float(Z))
+    return {"Z": np.array(Zl), "N": np.array(Nl), "E": np.array(El), "eps_homo": np.array(eps),
+            "T": np.array(Tl), "V_ne": np.array(Vnel), "V_ee": np.array(Veel),
+            "inv_r": np.array(Invl)}
 
 
 def build_reference_bond(verbose: bool = True, reuse_npz: bool = False) -> dict:
@@ -201,9 +217,18 @@ def build_reference_bond(verbose: bool = True, reuse_npz: bool = False) -> dict:
     os.makedirs(DATA_DIR, exist_ok=True)
     if reuse_npz and os.path.exists(BOND_PATH):
         d = np.load(BOND_PATH)
-        h2 = {"R": d["h2_R"], "E": d["h2_E"], "F": d["h2_F"], "basis": d["h2_basis"]}
-        h2p = {"R": d["h2p_R"], "Z": d["h2p_Z"], "E": d["h2p_E"], "F": d["h2p_F"]}
-        atoms = {"Z": d["at_Z"], "N": d["at_N"], "E": d["at_E"], "eps_homo": d["at_eps"]}
+        h2 = {"R": d["h2_R"], "E": d["h2_E"], "F": d["h2_F"], "basis": d["h2_basis"],
+              "T": d["h2_T"] if "h2_T" in d else None,
+              "V_ne": d["h2_Vne"] if "h2_Vne" in d else None,
+              "V_ee": d["h2_Vee"] if "h2_Vee" in d else None,
+              "E_nuc": d["h2_Enuc"] if "h2_Enuc" in d else None}
+        h2p = {"R": d["h2p_R"], "Z": d["h2p_Z"], "E": d["h2p_E"], "F": d["h2p_F"],
+               "inv_r": d["h2p_invr"] if "h2p_invr" in d else None}
+        atoms = {"Z": d["at_Z"], "N": d["at_N"], "E": d["at_E"], "eps_homo": d["at_eps"],
+                 "T": d["at_T"] if "at_T" in d else None,
+                 "V_ne": d["at_Vne"] if "at_Vne" in d else None,
+                 "V_ee": d["at_Vee"] if "at_Vee" in d else None,
+                 "inv_r": d["at_invr"] if "at_invr" in d else None}
         if verbose:
             print(f"[bağ] mevcut veri yeniden kullanılıyor: {BOND_PATH}")
         return _write_bond_meta(h2, h2p, atoms, verbose=verbose)
@@ -218,9 +243,14 @@ def build_reference_bond(verbose: bool = True, reuse_npz: bool = False) -> dict:
 
     if not (reuse_npz and os.path.exists(BOND_PATH)):
         np.savez_compressed(BOND_PATH, h2_R=h2["R"], h2_E=h2["E"], h2_F=h2["F"], h2_basis=h2["basis"],
+                            h2_T=h2.get("T"), h2_Vne=h2.get("V_ne"), h2_Vee=h2.get("V_ee"),
+                            h2_Enuc=h2.get("E_nuc"),
+                            h2p_invr=h2p.get("inv_r"),
                         h2p_R=h2p["R"], h2p_Z=h2p["Z"], h2p_E=h2p["E"], h2p_F=h2p["F"],
                             at_Z=atoms["Z"], at_N=atoms["N"], at_E=atoms["E"],
-                            at_eps=atoms["eps_homo"])
+                            at_eps=atoms["eps_homo"],
+                            at_T=atoms.get("T"), at_Vne=atoms.get("V_ne"),
+                            at_Vee=atoms.get("V_ee"), at_invr=atoms.get("inv_r"))
     return _write_bond_meta(h2, h2p, atoms, verbose=verbose)
 
 
@@ -353,6 +383,19 @@ def build_benchmarks(ref: Optional[Dict[str, np.ndarray]] = None,
     m_va = closed & (Z >= 6) & (Z <= 7)
     m_te = closed & (Z >= 8)
     train, val, test = m_atom(m_tr), m_atom(m_va), m_atom(m_te)
+    # ---- KUANTUM JÜRİSİ (yalnız eğitim+doğrulama; sınav sızmaz)
+    jury = m_tr | m_va
+    Zj = ref["at_Z"][jury].astype(float)
+    Nj = ref["at_N"][jury].astype(float)
+    Ej = ref["at_E"][jury]
+    inv_r_j = np.asarray(ref["at_invr"][jury], float)
+    Vee_j = np.asarray(ref["at_Vee"][jury], float)
+    # izoelektronik çiftler (aynı Z'de N=2 ve N=4)
+    Zpairs = np.array(sorted({float(z) for z in Zj
+                              if (Nj[Nj.astype(int) == 2][np.isin(Zj[Nj.astype(int) == 2], z)]).size
+                              and np.any((Zj == z) & (Nj == 4))}))
+    dE_pairs = np.array([
+        float(Ej[(Zj == z) & (Nj == 4)][0] - Ej[(Zj == z) & (Nj == 2)][0]) for z in Zpairs])
     probe = Dataset(X=[np.concatenate([val.X[0], test.X[0]]), np.concatenate([val.X[1], test.X[1]])],
                     y=np.concatenate([val.y, test.y]))
     out.append(Benchmark(
@@ -364,15 +407,33 @@ def build_benchmarks(ref: Optional[Dict[str, np.ndarray]] = None,
                  "kapalı formu yoktur; bulunan yasa aday olarak raporlanır."),
         var_names=["Z", "N"], train=train, val=val, test=test,
         tol_rel=5e-2, noise_rel=1e-3, cost_budget=24.0, tier="cheap",
+        # Ölçek yasası (boyut analizi, VERİDEN bağımsız): izoelektronik seride
+        # Z→∞ limitinde üs tam olarak 2 olmalıdır. Alt-başat terimler (Z^1, Z^0)
+        # sonlu Z'de üssü kaydırdığı için kontrol ASİMPTOTİK bölgede yapılır:
+        # log|E| / log Z üssü Z=16, 24, 32'de 2.0'a yakınsamalıdır.
         scaling_specs=[{"kind": "asymptotic", "var": 0, "target_exponent": 2.0,
-                        "points": [[10.0, 2.0], [9.0, 2.0], [8.0, 2.0]], "delta": 0.4,
-                        "tolerance": 0.05}],
-        physics_checks={}, notes={},
+                        "points": [[32.0, 2.0], [24.0, 2.0], [16.0, 2.0]], "delta": 0.4,
+                        "tolerance": 0.08}],
+        physics_checks={
+            # Hellmann-Feynman: ∂E/∂Z, bağımsız <Σ1/r> referansına karşı (eleme)
+            "hellmann_feynman": {"X": [Zj, Nj], "inv_r": inv_r_j, "eliminating": True,
+                                 "watch": True, "tolerance": 5e-2},
+            # Elektron-elektron itmesi: örtük V_ee = 2E − Z·∂E/∂Z bağımsız V_ee'ye karşı (eleme)
+            "electron_repulsion": {"X": [Zj, Nj], "V_ee": Vee_j, "eliminating": True,
+                                   "watch": True, "tolerance": 5e-2},
+            # Elektron sayısı tepkisi: ΔE(Z; 2→4) bağımsız farkla (eleme)
+            "electron_count": {"X": [Zpairs, np.full_like(Zpairs, 2.0), np.full_like(Zpairs, 4.0)],
+                               "dE": dE_pairs, "eliminating": True, "watch": True,
+                               "tolerance": 5e-2},
+        }, notes={},
         probe_X=[np.concatenate([probe.X[0], [2.0, 5.0, 12.0]]),
                  np.concatenate([probe.X[1], [2.0, 4.0, 2.0]])],
         reference_note=("GTO/HF, kapalı kabuk iki bloklu taban (5+4 primitif), üsler "
                         "varyasyonel optimize. Doğrulama: 2e serisi analitik 1/Z açılımına "
-                        "karşı ≤5e-4 bağıl, virial artığı ≤1e-3."),
+                        "karşı ≤5e-4 bağıl, virial artığı ≤1e-3. KUANTUM JÜRİSİ: F5 "
+                        "Hellmann-Feynman (∂E/∂Z = −⟨Σ1/r⟩), F10 elektron-elektron itmesi "
+                        "(örtük V_ee = 2E − Z·∂E/∂Z) ve F11 elektron sayısı tepkisi (ΔE, N=2→4) "
+                        "bağımsız HF büyüklüklerine karşı — ihlal eden aday elenir."),
     ))
 
     # ---------- 2) H2 bağ enerjisi
@@ -394,9 +455,21 @@ def build_benchmarks(ref: Optional[Dict[str, np.ndarray]] = None,
         var_names=["R"], train=tr, val=va, test=te,
         tol_rel=5e-3, noise_rel=3e-3, cost_budget=26.0, tier="cheap",
         scaling_specs=[],
-        physics_checks={"force_consistency": {"X": va.X, "F": va.extra["F"]}},
+        physics_checks={
+            # Hellmann-Feynman kuvveti: dE/dR = −F_ref (eleme)
+            "force_consistency": {"X": va.X, "F": va.extra["F"], "eliminating": True,
+                                  "watch": True, "tolerance": 3e-2},
+            # Genelleştirilmiş virial: T = −E − R·dE/dR, bağımsız çözücünün T'sine karşı (eleme)
+            # tolerans: referansın iç tutarlılığı ≤6.4e-3; iyi bir fit 2.9e-2'de kalır,
+            # fizik dışı adaylar %100+ sapar → 5e-2 ayrıştırıcı ve adil.
+            "virial": {"X": va.X, "T": np.asarray(ref["h2_T"], float)[va_m],
+                       "eliminating": True, "watch": True, "tolerance": 2e-2},
+        },
         notes={}, probe_X=[np.concatenate([va.X[0], te.X[0], [0.3, 8.0, 12.0]])],
-        reference_note="İki merkezli GTO/HF (2 elektron); taban denge çevresinde optimize edildi.",
+        reference_note=("İki merkezli GTO/HF (2 elektron); taban denge çevresinde optimize edildi. "
+                        "KUANTUM JÜRİSİ: F9 Hellmann-Feynman kuvveti (dE/dR = −F_ref) ve F6 "
+                        "genelleştirilmiş virial (formülün örtük kinetik enerjisi T = −E − R·E', "
+                        "bağımsız çözücünün T'siyle uyuşmalı)."),
     ))
 
     # ---------- 3) kuvvet alanı
@@ -410,7 +483,7 @@ def build_benchmarks(ref: Optional[Dict[str, np.ndarray]] = None,
                  "çapraz kontrol yapılır: dE_EA/dR ≈ −F_EA (mekanik Hellmann–Feynman)."),
         var_names=["R"], train=tr2, val=va2, test=te2,
         tol_rel=2e-2, noise_rel=5e-3, cost_budget=26.0, tier="cheap",
-        scaling_specs=[], physics_checks={}, notes={},
+        scaling_specs=[], notes={},   # yalnız dürüstlük: yok
         probe_X=[np.concatenate([va2.X[0], te2.X[0], [0.3, 8.0, 12.0]])],
         reference_note="Merkezi fark türevi (−(E(R+h)−E(R−h))/2h, h=0.003 a0).",
     ))
@@ -445,7 +518,19 @@ def build_benchmarks(ref: Optional[Dict[str, np.ndarray]] = None,
                         "lambdas": np.array([0.8, 1.2, 1.5]),
                         "also": [(0, -1.0)],          # R -> R/λ  (Z -> λZ)
                         "tolerance": 5e-2}],
-        physics_checks={"force_consistency": {"X": vap.X, "F": vap.extra["F"]}}, notes={},
+        physics_checks={
+            # Hellmann-Feynman (Z'ye göre): ∂ε/∂Z = −⟨Σ1/r⟩ (nükleer itme çıkarıldığı için
+            # türev doğrudan bağımsız <1/r> referansına eşit)
+            "hellmann_feynman": {"X": [vap.X[0], vap.X[1]],
+                                 "inv_r": np.asarray(ref["h2p_invr"], float)[va_m],
+                                 "idx": 1, "eliminating": False, "watch": False,
+                                 "tolerance": 5e-2,
+                                 "note": ("Z ızgarası {1, 1.5, 2} olduğu için bu jüri "
+                                          "şu an ayrıştırıcı değil; rapor edilir, eleme yapmaz. "
+                                          "Z ızgarası sıklaştırılınca eleme moduna alınacak.")},
+            "force_consistency": {"X": vap.X, "F": vap.extra["F"], "eliminating": True,
+                                  "watch": True},
+        }, notes={},
         probe_X=[np.concatenate([vap.X[0], tep.X[0], [0.3, 8.0]]),
                  np.concatenate([vap.X[1], tep.X[1], [1.0, 1.0]])],
         reference_note="Tek elektronlu iki merkez, tam (Born–Oppenheimer içinde) çözüm; ölçek yasası sayısal olarak da doğrulanır.",

@@ -61,6 +61,14 @@ class EAConfig:
     patience: int = 45
     physics_seeded: bool = True
     blind_mode: bool = False
+    quantum_gate: bool = True          # aramada kuantum jürisi uygulanır mı
+    quantum_kill: float = 30.0         # ihlal oranı bu eşiği aşarsa ∞ (ağır ihlal)
+    quantum_weight: float = 0.15       # sınırda ihlal için kademeli ceza (log10 birimi)
+    jury_refit: bool = True            # ihlal eden adayın sabitleri jüriye göre onarılır
+    jury_steps: int = 4                # 1. aşama onarım adımı (hızlı)
+    jury_weight: float = 2.0           # 1. aşama jüri ağırlığı
+    jury_steps2: int = 14              # 2. aşama (yalnızca umut vadeden adaylarda)
+    jury_weight2: float = 4.0          # 2. aşama jüri ağırlığı
 
 
 # ------------------------------------------------------------------ başlangıç ağaçları
@@ -152,6 +160,13 @@ def physics_seeds(var_names: List[str], key: str = "") -> List[ex.Tree]:
             # a·Z² + b·ZN + c·N²
             _f("add", _f("add", _f("mul", _c(1.0), Z2), _f("mul", _c(1.0), _f("mul", Z, N))),
                  _f("mul", _c(1.0), N2)),
+            # İZOELEKTRONİK (1/Z) AÇILIM KALIBI — genel yapı, katsayılar serbest:
+            #   −(a + b·N)·Z² + (c + d·N)·Z + e·N + f
+            # (bu kalıp zorunlu değil; yalnızca yapısal bir şablon. Sabitler veriye
+            #  ayarlanır ve kuantum jürisi (F5/F10/F11) geçilmeden doğrulanmaz.)
+            _f("add", _f("neg", _f("mul", _f("add", _c(1.0), _f("mul", _c(1.0), N)), Z2)),
+                 _f("add", _f("mul", _f("add", _c(1.0), _f("mul", _c(1.0), N)), Z),
+                      _f("add", _f("mul", _c(1.0), N), _c(1.0)))),
         ]
     if n == 2 and tuple(var_names) == ("R", "Z"):     # ölçek yasası: ε = Z²·f(ZR)
         R, Z = _x(0), _x(1)
@@ -543,6 +558,98 @@ def tune_constants(t: ex.Tree, X: List[np.ndarray], y: np.ndarray,
     return best
 
 
+
+# --------------------------------------------------- JÜRİ-FARKINDA SABİT AYARI
+def _res_vec(t: ex.Tree, Xrows, ops, target: np.ndarray, scale: np.ndarray) -> np.ndarray:
+    """Ölçekli artık vektörü: (Σ_r coef·f(X_r) − t_k) / scale_k."""
+    v = ex.evaluate(t, Xrows)
+    out = np.empty(len(target), dtype=float)
+    for k, op in enumerate(ops):
+        acc = 0.0
+        for (r, coef) in op:
+            acc += coef * v[r]
+        out[k] = (acc - target[k]) / scale[k]
+    return out
+
+
+def jury_fit_blocks(t: ex.Tree, bench, steps: int = 3, lam: float = 1e-3,
+                    jury_weight: float = 1.0, scale_y: Optional[float] = None) -> ex.Tree:
+    """
+    Hem VERİYE hem JÜRİYE göre sabit ayarı (Gauss-Newton).
+
+      artık = [ (f(X_eğitim) − y)/s_y ,  jw·(D_j f(X_j) − t_j)/(tol_j·|t_j|) ]
+
+    Kuantum yasasını sağlamayan katsayılar cezalandırılır; böylece evrim
+    "yasayı bilen" bir arayış yapar. Yalnızca eğitim+doğrulama noktaları.
+    """
+    cs = ex.consts(t)
+    if not cs or len(cs) > 6:
+        return t
+    blocks = fl.jury_blocks(bench)
+    if not blocks:
+        return t
+
+    X_d = bench.train.X
+    y_d = np.asarray(bench.train.y, float)
+    if scale_y is None:
+        scale_y = float(np.sqrt(np.mean(y_d ** 2))) or 1.0
+    Xrows = [np.asarray(x, float) for x in X_d]
+    ops = [[(k, 1.0)] for k in range(len(y_d))]
+    target = list(y_d)
+    scale = [scale_y] * len(y_d)
+
+    for b in blocks:
+        off = len(Xrows[0]) if Xrows else 0
+        Xrows = [np.concatenate([Xrows[i], np.asarray(b["X"][i], float)])
+                 for i in range(len(Xrows))]
+        for op in b["rows"]:
+            ops.append([(r + off, c) for (r, c) in op])
+        target.extend(list(b["target"]))
+        scale.extend(list(np.maximum(b["scale"] / max(jury_weight, 1e-12), 1e-300)))
+
+    target = np.asarray(target, float); scale = np.asarray(scale, float)
+    c = np.array(cs, dtype=float)
+    best = copy.deepcopy(t)
+    r0 = _res_vec(best, Xrows, ops, target, scale)
+    if not np.all(np.isfinite(r0)):
+        return t
+    best_sse = float(np.sum(r0 ** 2))
+
+    for _ in range(max(1, steps)):
+        J = np.zeros((len(target), c.size))
+        r = _res_vec(ex.set_consts(t, c), Xrows, ops, target, scale)
+        if not np.all(np.isfinite(r)):
+            return best
+        for i in range(c.size):
+            h = 1e-5 * max(1.0, abs(c[i]))
+            cp = c.copy(); cp[i] += h
+            cm = c.copy(); cm[i] -= h
+            rp = _res_vec(ex.set_consts(t, cp), Xrows, ops, target, scale)
+            rm = _res_vec(ex.set_consts(t, cm), Xrows, ops, target, scale)
+            if not (np.all(np.isfinite(rp)) and np.all(np.isfinite(rm))):
+                return best
+            J[:, i] = (rp - rm) / (2 * h)
+        try:
+            A = J.T @ J + lam * np.eye(c.size)
+            delta = np.linalg.solve(A, -J.T @ r)
+        except np.linalg.LinAlgError:
+            return best
+        delta = np.clip(delta, -5.0, 5.0)
+        cand = np.clip(c + delta, -1e6, 1e6)
+        rc = _res_vec(ex.set_consts(t, cand), Xrows, ops, target, scale)
+        if not np.all(np.isfinite(rc)):
+            lam *= 10
+            continue
+        sse = float(np.sum(rc ** 2))
+        if sse < best_sse:
+            best_sse = sse
+            best = ex.set_consts(t, cand)
+            c = cand
+        else:
+            lam *= 10
+    return best
+
+
 # ------------------------------------------------------------------ popülasyon
 class Individual:
     __slots__ = ("tree", "ev", "score", "gen")
@@ -574,6 +681,46 @@ def _mk_ind(tree: ex.Tree, bench, cfg: EAConfig, gen: int, do_lm: bool = True) -
     ind = Individual(tree, gen)
     ind.ev = fl.quick_eval(tree, bench, tier=bench.tier)
     ind.score = _score_ind(ind, bench, cfg)
+    # --- KUANTUM KAPISI: ELEME grubundaki kuantum jürisi düşerse aday ölür (∞ ceza)
+    if getattr(cfg, "quantum_gate", True) and np.isfinite(ind.score):
+        qres = fl.quantum_gate(tree, bench)
+        v = fl.quantum_violation([f for f in qres if f.group == "ELEME"])
+        # --- ONARIM: yasayı ihlal eden ama umut vadeden adayın sabitleri
+        #     hem veriye hem jüriye göre yeniden ayarlanır (EA yasayı bilir).
+        if (getattr(cfg, "jury_refit", True) and v > 1.0
+                and v <= cfg.quantum_kill * 2.0 and ex.n_consts(tree) > 0):
+            def _repair(t0, steps, w):
+                """Onarım denemesi; yalnızca ihlali AZALTAN sonuç kabul edilir."""
+                nonlocal tree, ind, qres, v
+                t2 = jury_fit_blocks(t0, bench, steps=steps, jury_weight=w)
+                q2 = fl.quantum_gate(t2, bench)
+                v2 = fl.quantum_violation([f for f in q2 if f.group == "ELEME"])
+                if v2 < v:
+                    tree = t2
+                    ind.tree = t2
+                    ind.ev = fl.quick_eval(t2, bench, tier=bench.tier)
+                    ind.score = _score_ind(ind, bench, cfg)
+                    qres, v = q2, v2
+                return v2
+
+            v1 = _repair(tree, cfg.jury_steps, cfg.jury_weight)
+            # İKİNCİ AŞAMA: veriyi de açıklayan (bariyere yakın) adaylarda uzun onarım.
+            # Ucuz/açıklayıcı olmayan adaylar buraya girmez → arama maliyeti düşük kalır.
+            nb = getattr(bench, "null_barrier", None)
+            promising = (nb is None) or (ind.ev.loss_val <= 3.0 * float(nb)) or (v1 <= 3.0)
+            if promising and v > 1.0 and cfg.jury_steps2 > cfg.jury_steps:
+                _repair(tree, cfg.jury_steps2, cfg.jury_weight2)
+        if qres:
+            ind.ev.filters = list(ind.ev.filters) + qres
+            ind.ev.notes["quantum_violation"] = v
+            if v > cfg.quantum_kill:
+                # AĞIR İHLAL: kuantum yasasını açıkça çiğneyen aday anında elenir (∞)
+                ind.ev.ok = False
+                ind.ev.notes["quantum_gate_blocked"] = 1.0
+                ind.score = math.inf
+            elif v > 1.0:
+                # SINIRDA İHLAL: kademeli ceza (evrim ihlali azaltmaya yönlendirilir)
+                ind.score += cfg.quantum_weight * (v - 1.0)
     return ind
 
 
@@ -737,8 +884,22 @@ def run(bench, cfg: Optional[EAConfig] = None,
         ev.notes["max_rel_err_test"] = fl.rel_maxerr(y_test, bench.test.y)
         rec = serialize_eval(ev, bench)
         rec["score_key"] = fl.score(ev, bench, cfg.cost_weight)
+        # jüri ihlal oranı (ELEME grubu): sıralamada İKİNCİ ölçüt
+        v = 0.0
+        for f in rec["filters"]:
+            if f.get("group") == "ELEME" and not f["passed"] and f.get("value") and f.get("limit"):
+                try:
+                    v = max(v, float(f["value"]) / float(f["limit"]))
+                except Exception:
+                    pass
+        rec["violation"] = v
         hall.append(rec)
-    hall.sort(key=lambda r: (not r["verified"], r["score_key"], r["cost"], r["loss_val"]))
+    # Sıralama: (1) kuantum jürisinden geçenler, (2) en AZ ihlal, (3) en iyi veri,
+    #           (4) en ucuz. Böylece doğrulanmış aday yoksa bile en az ihlal eden
+    #           şampiyon olur; "ucuz çöp" asla başa geçemez.
+    hall.sort(key=lambda r: (not r["verified"], r.get("violation", 0.0),
+                             math.log10(max(min(r["loss_val"], r["loss_train"]), 1e-16)),
+                             r["cost"]))
 
     champ = hall[0] if hall else None
     trees_by_formula = {ex.to_pretty(t, bench.var_names): t for t in unique}

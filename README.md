@@ -21,6 +21,7 @@ keşfeden ve keşfi **trilyon ölçeğinde atom değerlendirmesine** ölçekleye
 | Sızıntı | Eğitim / doğrulama / **sınav** kümeleri rejimlere göre ayrıdır; sınav kümesi yalnızca nihai raporda bir kez ölçülür |
 | Yalnızca eğri uydurma | **Hellmann–Feynman** (dE/dZ = −⟨1/r⟩) ve **virial/eylem durağanlığı** (E = −(Z/2)⟨1/r⟩, 2⟨T⟩+⟨V⟩→0) bağımsız sayısal referansa karşı sınanır |
 | Moleküler bağda "eğri uydurma" | **F9 türev tutarlılığı**: kuvvet ve enerji İKİ AYRI evrim koşusunda bağımsız keşfedilir; kuvvet adayının −dE/dR'si öteki keşfin (enerji şampiyonunun) türeviyle karşılaştırılır — yalnız mekanikten gelir, uydurmayla geçilemez |
+| Çok elektronluda "N ve e–e itmesini silme" hilesi | **Kuantum jürisi aramada zorunlu**: F5 (Hellmann–Feynman), **F10** (örtük e–e itmesi `V_ee = 2E − Z·∂E/∂Z`, min V_ee > 0) ve **F11** (elektron sayısı tepkisi `ΔE(2→4)`) ihlalinde aday elenir; moleküler tarafta F6 (genelleştirilmiş virial) ve F9 (kuvvet tutarlılığı) aynı rejimde |
 | Ölçek yasasını "tesadüfen" tutturmak | F2 filtresi eşzamanlı dönüşümü (R→R/λ, Z→λZ) ve asimptotik üssü (Z→∞ için 2) sınar; yasa **veriden bağımsız** olarak makine hassasiyetinde doğrulanır (7.3×10⁻¹⁵) |
 | Aşırı uyum (gereksiz basamaklar) | Uygunluk fonksiyonu **ölçüm gürültüsü tabanı** ile sınırlanır; hata tabanın altına indiğinde seçim yalnızca **daha ucuz** formu arar (MDL) |
 | Pahalı/güvenilmez formüller | F1 filtresi transandantal operatörleri (exp/log/trig) ürün formüllerden tamamen eler; maliyet modeli işlem birimleriyle ölçülür |
@@ -76,6 +77,41 @@ reports/          insan-okur raporlar (md + html)
 
 Açıkça belirtilen sınırlar: H2 eğrisi R≤3 a₀ (RHF ayrışma kuyruğu yapay yükselir); Li-benzeri açık
 kabuk (N=3) serisi taban sınırı nedeniyle benchmark'a alınmadı; He/Be literatür değerleri yalnız teşhis.
+
+## Kuantum koruma (çok elektronlu atom + moleküler bağ)
+
+Ölçülen başarısızlık: yalnız veriye bakan EA, çok elektronlu atomda elektron sayısını ve e–e itmesini
+formülden **silerek** ucuz ama imkânsız formüller üretiyordu (47. koşu şampiyonu `(0.5 − Z)·Z`).
+Kuantum teoremleri artık yalnız "doğrulama" değil, **arama düzeyinde yaptırım**:
+
+| jüri | yasa | tolerans | benchmark |
+|---|---|---|---|
+| F5 | Hellmann–Feynman `∂E/∂Z = −⟨Σ1/r⟩` | 5×10⁻² | çok elektronlu |
+| F10 | örtük e–e itmesi `V_ee = 2E − Z·∂E/∂Z` (ve `min V_ee > 0`) | 5×10⁻² | çok elektronlu |
+| F11 | elektron sayısı tepkisi `f(Z,4) − f(Z,2)` | 5×10⁻² | çok elektronlu |
+| F6 | genelleştirilmiş virial `T = −E − R·dE/dR` | 2×10⁻² | H₂ bağı |
+| F9 | kuvvet tutarlılığı `dE/dR = −F_ref` | 3×10⁻² | bağ / kuvvet / ölçek |
+
+Üç katmanlı yaptırım:
+
+1. **Jüri-farkında sabit ayarı** — her adayın sabitleri hem veriye hem jüri kısıtlarına göre
+   Gauss–Newton ile ayarlanır (kısıtlar formülün kendi tahminleri üzerinde doğrusal sonlu-fark
+   operatörleri; referanslar bağımsız çözücüden, **yalnız eğitim+doğrulama** noktalarında).
+   Yani EA kuantum yasasını *bilir*, sadece cezalandırılmaz.
+2. **Kademeli ceza** — onarım sonrası ihlal sürerse `+0.15·(v−1)`, `v = max(hata/tolerans)`.
+3. **Ağır ihlalde ∞** — `v > 30` ise aday anında ölür.
+
+Doğrulama (hizli preset, seed 33, uçtan uca koşu): eski şampiyonlar **elendi**, yeni şampiyonlar
+**DOĞRULANDI=True** —
+
+| benchmark | yeni şampiyon | jüri | değer |
+|---|---|---|---|
+| çok elektronlu atom | izoelektronik aile `−(0.748+0.126N)Z² + (−0.358+0.492N)Z − 0.430N + 0.747` | F5 / F10 / F11 | 1.5×10⁻⁴ / 1.5×10⁻³ / 1.1×10⁻³ |
+| H₂ bağı | rasyonel (Padé) aile | F6 / F9 | ✓ / 9.0×10⁻³ |
+| H₂⁺ ölçek | `Z²·(−9.42 − 0.930·ZR − 0.311·(ZR)²)/(4.37 + 2.47·ZR + 0.548·(ZR)²)` | F9 (F5 rapor) | 2.9×10⁻² |
+
+Ek düzeltme: F2’nin asimptotik ölçek kontrolü artık **Z→∞ limitini** (Z = 16…32) sınar; alt-başat
+terimler sonlu Z’de üssü kaydırdığı için doğru izoelektronik aile haksız eleniyordu.
 
 ## Kalıcı yayın (sunucu düşse de site ayakta)
 

@@ -748,5 +748,13 @@
  "cok_elektron|pop140|gen10|seed1095": 0.4399952515657394,
  "bag_h2|pop140|gen10|seed1095": 0.13589584464972132,
  "kuvvet_h2|pop140|gen10|seed1095": 0.8852259324562668,
- "h2plus_olcek|pop140|gen10|seed1095": 0.43059797413121864
+ "h2plus_olcek|pop140|gen10|seed1095": 0.43059797413121864,
+ "enerji|pop140|gen10|seed1096": 1.0,
+ "ters_yaricap|pop140|gen10|seed1096": 1.3257852179190346,
+ "etkin_potansiyel|pop140|gen10|seed1096": 0.9965938752653987,
+ "yukawa|pop140|gen10|seed1096": 0.6356731511689209,
+ "cok_elektron|pop140|gen10|seed1096": 0.07171413218661453,
+ "bag_h2|pop140|gen10|seed1096": 0.13146275734249774,
+ "kuvvet_h2|pop140|gen10|seed1096": 0.9115990147755365,
+ "h2plus_olcek|pop140|gen10|seed1096": 0.5390048213124681
 }

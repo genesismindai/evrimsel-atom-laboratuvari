@@ -113,6 +113,46 @@ Doğrulama (hizli preset, seed 33, uçtan uca koşu): eski şampiyonlar **elendi
 Ek düzeltme: F2’nin asimptotik ölçek kontrolü artık **Z→∞ limitini** (Z = 16…32) sınar; alt-başat
 terimler sonlu Z’de üssü kaydırdığı için doğru izoelektronik aile haksız eleniyordu.
 
+## Sıralı ilerleme: rastgele tohum yok, rekor zinciri var
+
+Her koşu **kaldığı yerden devam eder**: `data/lineage.json` içindeki rekor (ve eski rekorlar)
+bir sonraki koşunun başlangıç bireyi olur. Karşılaştırma dürüst-MDL sırasına göredir:
+
+1. kuantum jürisinden geçen (DOĞRULANMIŞ),
+2. en az jüri ihlali,
+3. **gürültü tabanına göre** etkin uyum `max(train, val)`,
+4. en ucuz (maliyet birimi).
+
+Yeni sonuç rekoru geçemezse rekor **korunur** — ilerleme monotoniktir, geriye gitmez.
+Böylece koşu sırası (1, 2, 3, …) bir *bilgi birikimi* zinciridir; rastgele tohumla sıfırdan
+başlama yoktur.
+
+## Sınır yok (yalnız donanım güvenliği)
+
+| Eskiden eleme nedeni | Şimdi |
+|---|---|
+| maliyet bütçesi aşımı | **kaldırıldı** — maliyet yalnızca tercih terimidir (eşit uyumda daha ucuz kazanır) |
+| düğüm/derinlik tavanı (22 düğüm / 5 seviye) | **kaldırıldı** — 64 düğüm / 10 seviye yalnız bellek güvenliği eşiği |
+| süre bütçesi (1000 nokta ≤ 400 µs) | runaway koruması (≥ 8 ms/1000 nokta) — patlamış formu tutar, hızlı formu kesmez |
+| nesil sayısı (yapay durma) | gürültü tabanı + iyileşme durması = **doğal son** (nesil bütçesi yalnız üst sınır) |
+
+Değişmeyenler: NaN/inf yasağı, taşma denetimi, donanım güvenliği ve tüm dürüstlük filtreleri.
+
+## İndirgeme geçişi (daha ucuz form) ve aşırı uyum koruması
+
+* **İndirgeme**: her şampiyon, kuantum jürisi bozulmadan küçültülür (alt-ağaç → sabit; sabitler
+  jüri-farkında yeniden ayarlanır; MDL yuvarlama). Kabul koşulu: jüri ✓, ihlal ≤ 1, hata **ölçüm
+  gürültü tabanını aşmıyor**, maliyet **gerçekten düşüyor**. Ayrıca "daha ucuz eşdeğer form" ayrı
+  bir kayıt olarak raporlanır (maliyet takılıp kalmaz, ör. 11 → 9 birim).
+* **Aşırı uyum**: skor ve sıralama `max(train, val)` kullanır; ayrıca hata, verinin gürültü tabanıyla
+  kapılanır (tabanın altındaki fark bilgi taşımaz → daha ucuz form tercih edilir).
+
+## Paralel koşu (lineer ilerleme)
+
+`--jobs N` ile her benchmark **kendi sürecinde** koşar (bulut: 4 vCPU). Tek bağlı çift korunur:
+`kuvvet_h2` şampiyonu, `bag_h2` şampiyonunun enerji ağacını devralır (F9 eş-keşif çapraz kontrolü).
+Ölçeklendirme tarafı zaten atom sayısıyla **doğrusal**dır (200 M atom → 10¹² atom projeksiyonu).
+
 ## Kalıcı yayın (sunucu düşse de site ayakta)
 
 Geliştirme ortamı (sandbox) oturumla kapanır; bu yüzden kalıcılık bulutta kurulur:

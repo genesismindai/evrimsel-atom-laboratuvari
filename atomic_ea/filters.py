@@ -187,8 +187,9 @@ def F3_robustness(tree: ex.Tree, bench, eval_us: float, time_budget_us: float) -
         issues.append(f"|sabit|={ex.max_abs_const(tree):.1e}>1e6")
     if ex.depth(tree) > 14:
         issues.append(f"derinlik {ex.depth(tree)}>14")
-    if ex.cost(tree) > bench.cost_budget:
-        issues.append(f"maliyet {ex.cost(tree):.1f}>{bench.cost_budget}")
+    # NOT (kp8): maliyet artık ELEME nedeni DEĞİL. Kullanıcı kuralı: "sınır olmasın,
+    # işlem sınırı olmamalı". Maliyet yalnızca uygunluk fonksiyonunda tercih olarak kalır
+    # (eşit doğrulukta daha ucuz form kazanır — MDL), tavan olarak dayatılmaz.
     if "powr" in ex.ops_used(tree):
         issues.append("gerçel kuvvet (taşma riski + pahalı)")
 
@@ -201,8 +202,10 @@ def F3_robustness(tree: ex.Tree, bench, eval_us: float, time_budget_us: float) -
         m = float(np.max(np.abs(y)))
         if m > 1e12:
             issues.append(f"|değer|max={m:.1e} taşma riski")
-    if eval_us > time_budget_us:
-        issues.append(f"süre {eval_us:.1f}us>{time_budget_us:.0f}us/1000nokta")
+    # Donanım güvenliği (SINIR DEĞİL): yalnızca kaçak/patlamış (runaway) formları tutar.
+    runaway_us = max(20.0 * time_budget_us, 8000.0)
+    if eval_us > runaway_us:
+        issues.append(f"runaway: süre {eval_us:.0f}us>{runaway_us:.0f}us/1000nokta")
 
     return FilterResult("F3", "gürbüzlük + donanım güvenliği", not issues,
                         eval_us, time_budget_us,
@@ -598,7 +601,8 @@ def score(ev: Evaluation, bench, cost_weight: float = 0.05) -> float:
         return math.inf
     penalty = cost_weight * (ev.cost / max(bench.cost_budget, 1e-9))
     floor = float(getattr(bench, "noise_rel", 1e-12) or 1e-12)
-    loss = max(ev.loss_train, floor)
+    # Aşırı uyum koruması: skor, eğitim ve DOĞRULAMA hatasının büyüğünü kullanır.
+    loss = max(max(ev.loss_train, ev.loss_val), floor)
     # MDL terimi: eşit doğrulukta daha KISA TANIMLI (basit rasyonel sabitli) form kazanır.
     mdl = 0.0025 * ex.const_dl(ev.tree)
     return math.log10(loss) + penalty + mdl

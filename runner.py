@@ -30,6 +30,8 @@ from atomic_ea import benchmarks as bm
 from atomic_ea import evolution as ev
 from atomic_ea import expression as ex
 from atomic_ea import filters as fl
+from atomic_ea import lineage as lin
+import dataclasses as _dc
 from atomic_ea import physics as ph
 from atomic_ea import throughput as tp
 
@@ -40,10 +42,12 @@ REPORTS = os.path.join(ROOT, "reports")
 for d in (DATA, RUNS, REPORTS):
     os.makedirs(d, exist_ok=True)
 
+# kp8: nesil sayıları artık YAPAY SINIR değil, "bütçe üst sınırı"dır; arama
+# gürültü tabanına inip iyileşme durunca kendiliğinden biter (doğal son).
 PRESETS = {
-    "hizli": dict(pop_size=140, generations=35, islands=3, strict_interval=5),
-    "standart": dict(pop_size=300, generations=80, islands=3, strict_interval=5),
-    "derin": dict(pop_size=480, generations=160, islands=4, strict_interval=4),
+    "hizli": dict(pop_size=140, generations=140, islands=3, strict_interval=5),
+    "standart": dict(pop_size=300, generations=300, islands=3, strict_interval=5),
+    "derin": dict(pop_size=480, generations=520, islands=4, strict_interval=4),
 }
 
 
@@ -174,7 +178,9 @@ def ensure_null_barriers(benches: List[bm.Benchmark], cfg: ev.EAConfig,
             cache = {}
     out = {}
     for b in benches:
-        key = f"{b.key}|pop{cfg.pop_size}|gen{max(10, cfg.generations//4)}|seed{cfg.seed}"
+        # kp8: bariyer, mimari + VERİnin özelliğidir; rastgele tohuma bağlı değildir.
+        # (sıralı ilerlemede her koşuda yeniden kalibre etmemek için anahtar tohumdan bağımsız)
+        key = f"{b.key}|pop{cfg.pop_size}|gen{max(10, min(cfg.generations, 40)//4)}|v2"
         if key in cache and not force:
             out[b.key] = float(cache[key])
             b.null_barrier = float(cache[key])
@@ -191,6 +197,165 @@ def ensure_null_barriers(benches: List[bm.Benchmark], cfg: ev.EAConfig,
         if engine:
             engine.log(f"  bariyer {b.key} = {val:.4g}  (karışık veride ulaşılan en iyi doğrulama hatası)")
     return out
+
+
+
+
+# ------------------------------------------------------------------ paralel işçi
+def _bench_worker(payload: dict) -> dict:
+    """
+    Tek benchmark'ı ayrı bir süreçte koşar (PARALEL ilerleme).
+    Her süreç veriyi kendisi kurar; girdi/çıktı saf veridir (pickle).
+    """
+    key = payload["key"]
+    import atomic_ea.benchmarks as bm2
+    import atomic_ea.evolution as ev2
+    benches = bm2.build_all(verbose=False)
+    b = next((x for x in benches if x.key == key), None)
+    if b is None:
+        return {"key": key, "error": "benchmark bulunamadı"}
+    b.null_barrier = payload.get("null_barrier")
+    if payload.get("cross_tree") is not None:
+        b.cross_checks = {"energy_tree": payload["cross_tree"]}
+    cfg = ev2.EAConfig(**payload["cfg"])
+    cfg.resume_trees = tuple(payload.get("resume") or ())
+    deadline = payload.get("deadline")
+    should_stop = (lambda: time.time() > deadline) if deadline else None
+    t0 = time.time()
+    try:
+        res = ev2.run(b, cfg, progress=None, should_stop=should_stop)
+        res["wall_before_report_s"] = round(time.time() - t0, 2)
+        return {"key": key, "res": res}
+    except Exception as e:
+        import traceback
+        return {"key": key, "error": f"{type(e).__name__}: {e}",
+                "trace": traceback.format_exc()[-800:]}
+
+
+def _finish_bench(engine: Engine, record: dict, bench_status: dict, b, res: dict,
+                  cfg, state: dict, iteration: int, run_id: str) -> None:
+    """Bir benchmark koşusunun ortak kapanışı: sınav raporu, limitler, rekor zinciri."""
+    champ = res.get("champion")
+    engine.results[b.key] = res
+    record["benchmarks"][b.key] = res
+    try:
+        res["known_limits"] = known_limit_check(b.key, champ, b)
+    except Exception as e:
+        res["known_limits"] = {"error": f"{type(e).__name__}: {e}"}
+    if champ:
+        engine.log(f"  ŞAMPİYON [{b.key}]: {champ['formula']}")
+        engine.log(f"    maliyet={champ['cost']} birim | train={champ['loss_train']:.3e} | "
+                   f"val={champ['loss_val']:.3e} | SINAV(ekstrapolasyon)={champ['loss_test']:.3e} | "
+                   f"doğrulandı={champ['verified']}")
+        for f in champ["filters"]:
+            if not f["passed"] or f["group"] == "ELEME":
+                engine.log(f"    {f['id']} [{'GEÇTİ' if f['passed'] else 'KALDI'}] {f['name']}: {f['detail'][:80]}")
+    # --- REKOR ZİNCİRİ (sıralı ilerleme): yalnız iyileşirse güncellenir
+    if int(res.get("generations_run", 0) or 0) < 2:
+        # süre doldu / koşu kesildi: zayıf bir sonuç rekor sayılmaz
+        engine.log(f"  (yetersiz arama [{b.key}] — süre doldu; rekora işlenmedi)")
+        res["lineage"] = {"new_record": False, "previous": (lin.bench_entry(state, b.key) or {}).get("record"),
+                          "iteration": iteration, "skipped": True}
+        _save_json(os.path.join(DATA, "progress.json"), engine.snapshot() | {"full": record})
+        return
+    info = lin.merge(state, b.key, iteration, run_id, champ,
+                     noise_rel=float(getattr(b, "noise_rel", 0.0) or 0.0))
+    res["lineage"] = info
+    if info["new_record"]:
+        prev = info["previous"] or {}
+        engine.log(f"  ★ YENİ REKOR [{b.key}] (sıra {iteration})"
+                   + (f" — önceki: maliyet {prev.get('cost')}, val={prev.get('loss_val')}" if prev else ""))
+    else:
+        prev = info["previous"] or {}
+        engine.log(f"  rekor korundu [{b.key}] — mevcut rekor sıra {prev.get('iteration')}, "
+                   f"maliyet {prev.get('cost')}, val={prev.get('loss_val')}")
+    lin.save(state)
+    _save_json(os.path.join(DATA, "progress.json"), engine.snapshot() | {"full": record})
+
+
+def _evolve_all(engine: Engine, record: dict, benches: List[bm.Benchmark], cfg,
+                state: dict, iteration: int, run_id: str,
+                jobs: int = 1, deadline: Optional[float] = None) -> None:
+    """
+    Benchmark'ları koşar. jobs > 1 ise PARALEL süreçler (her benchmark kendi süreci).
+    Tüm benchmark'lar bağımsızdır; tek istisna 'eş keşif çapraz kontrolü':
+    kuvvet_h2, bag_h2 şampiyonunun enerji ağacını devralır → o ikisi sıralı bağlanır.
+    """
+    cfg_by_bench = {}
+    for b in benches:
+        cfg_b = _dc.replace(cfg, resume_trees=tuple(lin.resume_trees(state, b.key)))
+        cfg_by_bench[b.key] = cfg_b
+        ent = lin.bench_entry(state, b.key)
+        if (ent.get("record") or {}).get("formula"):
+            engine.log(f"devralınan rekor [{b.key}]: {ent['record']['formula'][:90]} "
+                       f"(sıra {ent['record'].get('iteration')}, maliyet {ent['record'].get('cost')})")
+
+    def run_seq(b, cross_tree=None) -> dict:
+        engine.bench_status[benches.index(b)]["status"] = "çalışıyor"
+        engine.log(f"evrim başlıyor: {b.key} — {b.title}")
+        if b.null_barrier:
+            engine.log(f"  numeroloji bariyeri: val hatası ≤ {b.null_barrier/cfg.null_factor:.3g} olmalı")
+        cfg_b = cfg_by_bench[b.key]
+        if cross_tree is not None:
+            b.cross_checks = {"energy_tree": cross_tree}
+            engine.log("  çapraz kontrol: kuvvet adayının türevi, bag_h2 şampiyonunun "
+                       "enerjisiyle karşılaştırılacak (F9)")
+        stop = (lambda: engine.stop_flag or (deadline is not None and time.time() > deadline))
+        res = ev.run(b, cfg_b, progress=None, should_stop=stop)
+        engine.best_trees[b.key] = res.pop("champion_tree", None)
+        return res
+
+    use_par = int(jobs) > 1 and len(benches) > 1
+    order = [b for b in benches if b.key != "kuvvet_h2"]
+    kv = next((b for b in benches if b.key == "kuvvet_h2"), None)
+
+    if not use_par:
+        for b in order + ([kv] if kv else []):
+            if engine.stop_flag:
+                engine.state = "durdu"
+                return
+            engine.state = "evrim"
+            cross = engine.best_trees.get("bag_h2") if (kv and b is kv) else None
+            res = run_seq(b, cross)
+            _finish_bench(engine, record, engine.bench_status, b, res, cfg, state, iteration, run_id)
+            engine.bench_status[benches.index(b)]["status"] = "tamamlandı"
+        return
+
+    # --- PARALEL: benchmark'lar aynı anda ayrı süreçlerde
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+    engine.log(f"paralel koşu: {len(order)} benchmark, {jobs} süreç")
+    base_cfg = {k: getattr(cfg, k) for k in cfg.__dataclass_fields__
+                if k != "resume_trees" and not isinstance(getattr(cfg, k), tuple)}
+    payloads = []
+    for b in order:
+        payloads.append({
+            "key": b.key,
+            "cfg": {**base_cfg, "resume_trees": cfg_by_bench[b.key].resume_trees},
+            "resume": list(cfg_by_bench[b.key].resume_trees),
+            "null_barrier": b.null_barrier,
+            "deadline": deadline,
+        })
+    with ProcessPoolExecutor(max_workers=int(jobs)) as ex:
+        futs = {ex.submit(_bench_worker, p): p["key"] for p in payloads}
+        for fu in as_completed(futs):
+            key = futs[fu]
+            b = next(x for x in benches if x.key == key)
+            out = fu.result()
+            engine.bench_status[benches.index(b)]["status"] = "tamamlandı"
+            if out.get("error"):
+                engine.log(f"  HATA [{key}]: {out['error']}")
+                record["benchmarks"][key] = {"error": out["error"]}
+                continue
+            engine.log(f"evrim tamamlandı: {key} ({out['res'].get('wall_seconds')} s)")
+            _finish_bench(engine, record, engine.bench_status, b, out["res"],
+                          cfg, state, iteration, run_id)
+
+    if kv is not None and not engine.stop_flag:
+        engine.state = "evrim"
+        cross = (engine.results.get("bag_h2") or {}).get("champion_tree") or engine.best_trees.get("bag_h2")
+        res = run_seq(kv, cross)
+        _finish_bench(engine, record, engine.bench_status, kv, res, cfg, state, iteration, run_id)
+        engine.bench_status[benches.index(kv)]["status"] = "tamamlandı"
 
 
 # ------------------------------------------------------------------ bilinen limitler
@@ -302,19 +467,33 @@ def known_limit_check(key: str, champ: dict, bench, n_probe: int = 400) -> Optio
 
 
 # ------------------------------------------------------------------ ana koşu
-def run_all(engine: Engine, preset: str = "hizli", seed: int = 1,
+def run_all(engine: Engine, preset: str = "hizli", seed: Optional[int] = None,
             do_null: bool = True, do_throughput: bool = True,
             n_real_atoms: int = 100_000_000,
-            targets: Optional[List[float]] = None) -> dict:
+            targets: Optional[List[float]] = None,
+            iteration: Optional[int] = None, jobs: int = 1,
+            minutes: Optional[float] = None) -> dict:
+    """
+    Tek koşu. SIRALI İLERLEME: her koşu önceki rekorun üstüne koyar (rastgele tohum yok).
+    iteration verilmezse rekor zincirindeki sıradaki numara kullanılır; 'seed' artık
+    yalnızca iç çeşitlilik parametresidir ve sıra numarasına eşittir (deterministik).
+    """
     engine.stop_flag = False
-    cfg = ev.EAConfig(**PRESETS[preset], seed=seed)
-    run_id = _dt.datetime.now().strftime("%Y%m%d-%H%M%S") + f"-{preset}-s{seed}"
+    state = lin.load()
+    iteration = int(iteration) if iteration is not None else lin.next_iteration(state)
+    if seed is None:
+        seed = iteration                      # rastgele tohum yok: sıra numarası
+    cfg = ev.EAConfig(**PRESETS[preset], seed=int(seed))
+    deadline = (time.time() + float(minutes) * 60.0) if minutes else None
+    run_id = _dt.datetime.now().strftime("%Y%m%d-%H%M%S") + f"-{preset}-i{iteration}"
     engine.run_id, engine.preset, engine.seed = run_id, preset, seed
     engine.started, engine.finished = now_iso(), None
     engine.results, engine.error, engine.throughput = {}, None, None
     t_start = time.time()
     record = {
         "run_id": run_id, "preset": preset, "seed": seed, "started": engine.started,
+        "iteration": iteration, "jobs": int(jobs),
+        "progression": "sıralı (rekor devamlılığı; rastgele tohum yok)",
         "config": {k: getattr(cfg, k) for k in cfg.__dataclass_fields__},
         "benchmarks": {}, "throughput": None, "self_test": None,
     }
@@ -348,55 +527,10 @@ def run_all(engine: Engine, preset: str = "hizli", seed: int = 1,
         else:
             engine.log("numeroloji bariyeri kalibrasyonu atlandı (uyarı: F4 filtresi pasif)")
 
-        # ---- 2) her benchmark için evrim
-        for idx, b in enumerate(benches):
-            if engine.stop_flag:
-                engine.state = "durdu"
-                break
-            engine.state = "evrim"
-            engine.bench_status[idx]["status"] = "çalışıyor"
-            engine.log(f"evrim başlıyor: {b.key} — {b.title}")
-            if b.null_barrier:
-                engine.log(f"  numeroloji bariyeri: val hatası ≤ {b.null_barrier/cfg.null_factor:.3g} olmalı")
-
-            def progress(d, idx=idx, b=b):
-                if d.get("type") == "gen":
-                    engine.bench_status[idx]["gen"] = d.get("gen")
-                    engine.bench_status[idx]["best_score"] = d.get("best_score")
-                    engine.bench_status[idx]["best_val"] = d.get("best_val_loss")
-                    engine.bench_status[idx]["formula"] = d.get("formula")
-                    engine.bench_status[idx]["cost"] = d.get("cost")
-                    engine.bench_status[idx]["archive"] = d.get("archive")
-                    engine._publish({"type": "gen", "bench": b.key, **d})
-
-            # ---- eş keşif çapraz kontrolü: iki bağımsız keşif fizik yasasıyla bağlanır
-            eng = engine.best_trees.get("bag_h2")
-            if b.key == "kuvvet_h2" and eng is not None:
-                b.cross_checks = {"energy_tree": eng}
-                engine.log("  çapraz kontrol: kuvvet adayının türevi, bag_h2 şampiyonunun "
-                           "enerjisiyle karşılaştırılacak (F9)")
-            elif b.key == "bag_h2" and b.cross_checks.get("force_tree") is not None:
-                pass
-            t0 = time.time()
-            res = ev.run(b, cfg, progress=progress, should_stop=lambda: engine.stop_flag)
-            engine.best_trees[b.key] = res.pop("champion_tree", None)
-            res["wall_before_report_s"] = round(time.time() - t0, 2)
-            champ = res.get("champion")
-            engine.results[b.key] = res
-            record["benchmarks"][b.key] = res
-            engine.bench_status[idx]["status"] = "tamamlandı"
-            try:
-                res["known_limits"] = known_limit_check(b.key, champ, b)
-            except Exception as e:
-                res["known_limits"] = {"error": f"{type(e).__name__}: {e}"}
-            if champ:
-                engine.log(f"  ŞAMPİYON [{b.key}]: {champ['formula']}")
-                engine.log(f"    maliyet={champ['cost']} birim | train={champ['loss_train']:.3e} | "
-                           f"val={champ['loss_val']:.3e} | SINAV(ekstrapolasyon)={champ['loss_test']:.3e} | "
-                           f"doğrulandı={champ['verified']}")
-                for f in champ["filters"]:
-                    engine.log(f"    {f['id']} [{'GEÇTİ' if f['passed'] else 'KALDI'}] {f['name']}: {f['detail'][:80]}")
-            _save_json(os.path.join(DATA, "progress.json"), engine.snapshot() | {"full": record})
+        # ---- 2) her benchmark için evrim — SIRALI (rekor devralınır) + PARALEL (jobs)
+        engine.state = "evrim"
+        _evolve_all(engine, record, benches, cfg, state, iteration, run_id,
+                    jobs=jobs, deadline=deadline)
 
         # ---- 3) trilyon ölçeği muhasebesi (şampiyon enerji formülü ile)
         if do_throughput and "enerji" in engine.results and engine.results["enerji"].get("champion"):
@@ -435,7 +569,8 @@ def run_all(engine: Engine, preset: str = "hizli", seed: int = 1,
         _save_json(os.path.join(RUNS, f"{run_id}.json"), record)
         idx = load_index()
         idx.append({
-            "run_id": run_id, "preset": preset, "seed": seed,
+            "run_id": run_id, "preset": preset, "seed": seed, "iteration": iteration,
+            "jobs": int(jobs),
             "started": engine.started, "finished": engine.finished,
             "wall_seconds_total": record["wall_seconds_total"],
             "champions": {k: (v.get("champion") or {}).get("formula") for k, v in record["benchmarks"].items()},
@@ -525,7 +660,10 @@ def write_report(record: dict) -> tuple:
     A(f"# Evrimsel Keşif Raporu — {rid}")
     A("")
     A(f"- **Başlangıç / bitiş:** {record['started']} → {record.get('finished')}")
-    A(f"- **Ön ayar / tohum:** `{record['preset']}` / `{record['seed']}`")
+    A(f"- **Ön ayar / sıra:** `{record['preset']}` / `{record.get('iteration', record['seed'])}` "
+      f"(sıralı ilerleme: rekor devralınır, rastgele tohum yok)")
+    if record.get("jobs", 1) > 1:
+        A(f"- **Paralellik:** {record['jobs']} süreç (benchmark başına bir süreç)")
     A(f"- **Toplam süre:** {record.get('wall_seconds_total')} s")
     A(f"- **Yapılandırma:** `{json.dumps(record['config'], ensure_ascii=False)}`")
     A("")

@@ -164,5 +164,14 @@
    "8000-idyb9ktsfj7rx3u34qpf0.e2b.app"
   ],
   "note": "Bu adresler geçici/oturumluk olabilir. Bilimsel kanıtlar kalıcıdır: data/runs/*.json ve reports/*.md|.html"
+ },
+ {
+  "recorded_at": "2026-09-25T06:21:23+00:00",
+  "bind": "0.0.0.0:8000",
+  "observed_origins": [
+   "127.0.0.1:8000",
+   "8000-idyb9ktsfj7rx3u34qpf0.e2b.app"
+  ],
+  "note": "Bu adresler geçici/oturumluk olabilir. Bilimsel kanıtlar kalıcıdır: data/runs/*.json ve reports/*.md|.html"
  }
 ]

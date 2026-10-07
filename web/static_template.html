@@ -68,6 +68,12 @@
   </div>
 
   <div class="card full">
+    <h2>Sıralı ilerleme — rekor zinciri <span class="small">(rastgele tohum yok: her koşu önceki rekorun üstüne koyar; asla geriye gitmez)</span></h2>
+    <div class="grid3" id="lineageStats"></div>
+    <div id="lineage" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card full">
     <h2>Keşif sonuçları — benchmark'lar</h2>
     <div id="bench"></div>
   </div>
@@ -130,6 +136,7 @@ function init(){
     tr2.innerHTML = `<td colspan="4" class="small">${champs}</td>`;
     arch.appendChild(tr2);
   });
+  if(typeof renderLineage === "function") renderLineage();
   if(D.runs.length) render(D.runs[D.runs.length-1].run_id);
   else { $("#bench").innerHTML = '<div class="small">henüz koşu yok</div>'; }
 }
@@ -185,6 +192,8 @@ function renderBenches(benches){
       </div>
       <div style="margin-top:8px">${filterChips(c)}</div>
       <div class="small" style="margin-top:6px">python: <code>${c.python||"—"}</code> · doğrulandı: <b>${c.verified}</b></div>
+      ${(res.reduced_form && res.reduced_form.formula && res.reduced_form.formula!==c.formula)?`<div class="small" style="margin-top:6px">💰 <b>daha ucuz eşdeğer form</b> (jüri geçti, hata gürültü tabanı içinde): <code>${res.reduced_form.formula}</code> — maliyet ${res.reduced_form.cost} (şampiyon ${c.cost})</div>`:""}
+      ${(res.lineage)?`<div class="small" style="margin-top:6px">rekor zinciri: <b>${res.lineage.new_record?"★ yeni rekor":"rekor korundu"}</b>${res.lineage.previous?` · önceki rekor: maliyet ${res.lineage.previous.cost}, val ${fmt(res.lineage.previous.loss_val)}`:""}</div>`:""}
       ${(c.generalization_ok===false)?`<div class="warn" style="margin-top:6px">⚠️ genelleme uyarısı: sınav hatası toleransın 5 katından büyük — formül eğitim/doğrulama rejiminde geçerli, sınav rejiminde değil</div>`:""}`;
     if(res.known_limits && res.known_limits.limit){
       const kl = res.known_limits;
@@ -211,6 +220,26 @@ function renderBenches(benches){
     }
     d.innerHTML = html; host.appendChild(d);
   });
+}
+
+function renderLineage(){
+  const L = D.lineage || {};
+  const host = $("lineage"); const st = $("lineageStats");
+  if(!host) return;
+  const recs = L.records || [];
+  if(st) st.innerHTML = `
+    <div class="stat"><b>${L.iteration||0}</b><span>sıralı adım (koşu sayısı)</span></div>
+    <div class="stat"><b>${recs.filter(r=>r.verified).length}/${recs.length}</b><span>doğrulanmış rekor</span></div>
+    <div class="stat"><b>${recs.reduce((a,r)=>a+(r.records_total||0),0)}</b><span>toplam rekor kırma</span></div>`;
+  host.innerHTML = `<table><tr><th>benchmark</th><th>rekor sırası</th><th>formül (rekor)</th>
+      <th>maliyet</th><th>doğrulama</th><th>sınav</th><th>adım/rekor</th><th>durum</th></tr>` +
+    recs.map(r=>`<tr><td><b>${r.key}</b></td><td class="num">${r.iteration}</td>
+      <td><code>${r.formula||"—"}</code></td><td class="num">${r.cost}</td>
+      <td class="num">${fmt(r.loss_val)}</td><td class="num">${fmt(r.loss_test)}</td>
+      <td class="num">${r.steps_total}/${r.records_total}</td>
+      <td>${r.verified?"<span class=\"chip ok\">doğrulandı</span>":"<span class=\"chip no\">jüri beklemede</span>"}</td></tr>`).join("") + `</table>
+    <div class="small" style="margin-top:6px">Doğrulama: kuantum jürisi (F5/F6/F9/F10/F11) + numeroloji bariyeri (etiket karıştırma) + ayrı sınav kümesi.
+    Rekor ancak <b>jüriden geçen, ihlali az olan, uyumu daha iyi ya da (gürültü tabanının altında eşit uyumla) daha ucuz</b> bir formla değişir.</div>`;
 }
 
 function renderThroughput(t){

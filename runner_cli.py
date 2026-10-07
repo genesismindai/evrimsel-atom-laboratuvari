@@ -8,8 +8,10 @@
 """
 runner_cli.py — Komut satırı koşusu, sürekli (kesintisiz) keşif modu ve arşiv yönetimi.
 
-Tek seferlik koşu:
-    python3 runner_cli.py --preset hizli --seed 7
+Tek seferlik koşu (SIRALI İLERLEME — rastgele tohum yok):
+    python3 runner_cli.py --preset hizli              # sıradaki rekor adımı
+    python3 runner_cli.py --preset hizli --jobs 4     # paralel (benchmark başına süreç)
+    python3 runner_cli.py --preset standart --minutes 55   # güvenlik amaçlı süre tavanı
 
 Sürekli mod (bulut işleri/kalıcı yayın için): her turda yeni tohumla koşar,
 her turdan sonra statik siteyi (docs/) tazeler. Durdurmak için:
@@ -40,16 +42,25 @@ def console_engine() -> Engine:
     return eng
 
 
-def one_run(eng: Engine, preset: str, seed: int, do_null: bool,
-            do_throughput: bool, atoms: float) -> dict:
+def one_run(eng: Engine, preset: str, seed, do_null: bool,
+            do_throughput: bool, atoms: float,
+            iteration=None, jobs: int = 1, minutes=None) -> dict:
     return run_all(eng, preset=preset, seed=seed, do_null=do_null,
-                   do_throughput=do_throughput, n_real_atoms=int(atoms))
+                   do_throughput=do_throughput, n_real_atoms=int(atoms),
+                   iteration=iteration, jobs=jobs, minutes=minutes)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Filtreli evrimsel atom fiziği koşusu")
     ap.add_argument("--preset", choices=list(PRESETS), default="hizli")
-    ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--seed", type=int, default=None,
+                    help="iç çeşitlilik; verilmezse sıra numarası kullanılır (rastgele tohum yok)")
+    ap.add_argument("--iteration", type=int, default=None,
+                    help="sıralı ilerleme adımı (verilmezse rekor zincirindeki sıradaki)")
+    ap.add_argument("--jobs", type=int, default=1,
+                    help="paralel süreç sayısı (0 = makinedeki tüm çekirdekler)")
+    ap.add_argument("--minutes", type=float, default=None,
+                    help="koşu için güvenlik süresi (arama sınırı değil, CI koruması)")
     ap.add_argument("--no-null", action="store_true", help="numeroloji bariyeri kalibrasyonunu atla")
     ap.add_argument("--no-throughput", action="store_true", help="trilyon ölçeği muhasebesini atla")
     ap.add_argument("--atoms", type=float, default=1e8, help="gerçek koşulacak atom sayısı (örn. 1e9)")
@@ -64,12 +75,16 @@ def main() -> None:
         os.environ["EA_AUTO_EXPORT"] = "1"
 
     if not a.forever:
-        rec = one_run(eng, a.preset, a.seed, not a.no_null, not a.no_throughput, a.atoms)
-        print("\n=== ÖZET ===")
+        jobs = (os.cpu_count() or 1) if a.jobs == 0 else max(1, a.jobs)
+        rec = one_run(eng, a.preset, a.seed, not a.no_null, not a.no_throughput, a.atoms,
+                      iteration=a.iteration, jobs=jobs, minutes=a.minutes)
+        print("\n=== ÖZET (sıra %s) ===" % rec.get("iteration"))
         for k, v in rec["benchmarks"].items():
             c = v.get("champion") or {}
+            lg = v.get("lineage") or {}
+            mark = "★ yeni rekor" if lg.get("new_record") else "rekor korundu"
             print(f"{k:16s} → {c.get('formula')}   (maliyet {c.get('cost')}, "
-                  f"sınav hatası {c.get('loss_test')}, doğrulandı={c.get('verified')})")
+                  f"sınav hatası {c.get('loss_test')}, doğrulandı={c.get('verified')}) [{mark}]")
         print(f"kayıt: data/runs/{rec['run_id']}.json · rapor: reports/{rec['run_id']}.md")
         if a.export or os.environ.get("EA_AUTO_EXPORT") == "1":
             import export_static
@@ -80,14 +95,15 @@ def main() -> None:
     if os.path.exists(STOP_FILE):
         os.remove(STOP_FILE)
     n = 0
-    print(f"[sürekli mod] başlangıç tohumu {a.seed}, bekleme {a.interval} s, "
+    print(f"[sürekli mod] sıralı ilerleme (rastgele tohum yok), bekleme {a.interval} s, "
           f"maks koşu {a.max_runs or '∞'} · durdurmak için: touch {os.path.relpath(STOP_FILE)}")
     try:
         while True:
-            seed = a.seed + n
-            print(f"\n[sürekli mod] === koşu #{n+1} (tohum {seed}) ===")
+            print(f"\n[sürekli mod] === koşu #{n+1} (sıralı) ===")
             try:
-                one_run(eng, a.preset, seed, not a.no_null, not a.no_throughput, a.atoms)
+                one_run(eng, a.preset, a.seed, not a.no_null, not a.no_throughput, a.atoms,
+                        iteration=a.iteration, jobs=(os.cpu_count() or 1) if a.jobs == 0 else max(1, a.jobs),
+                        minutes=a.minutes)
             except Exception as e:
                 print(f"[sürekli mod] koşu hatası: {type(e).__name__}: {e} — devam ediliyor")
             n += 1

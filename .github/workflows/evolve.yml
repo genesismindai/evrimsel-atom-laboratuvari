@@ -69,9 +69,11 @@ jobs:
           ATOMS="${{ github.event.inputs.atoms || '2e8' }}"
           echo "ön ayar: $PRESET · atom: $ATOMS"
           # Her koşuda farklı tohum: run_number ile deterministik ama çeşitlenen arama
-          SEED=$(( 1000 + ${{ github.run_number }} ))
-          python runner_cli.py --preset "$PRESET" --seed "$SEED" --atoms "$ATOMS"
-          echo "preset=$PRESET seed=$SEED" >> "$GITHUB_STEP_SUMMARY"
+          # SIRALI İLERLEME (kp8): rastgele tohum yok. Koşu numarası yalnızca SIRA
+          # numarasıdır; arama, rekor zincirinden (data/lineage.json) devam eder.
+          python runner_cli.py --preset "$PRESET" --iteration ${{ github.run_number }} \
+                 --jobs 4 --minutes 55 --atoms "$ATOMS"
+          echo "preset=$PRESET sıra=${{ github.run_number }} (sıralı ilerleme)" >> "$GITHUB_STEP_SUMMARY"
           echo "### Koşu: $PRESET / seed $SEED" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Statik yayını üret (docs/)

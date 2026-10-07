@@ -100,6 +100,31 @@ haksız eliyordu.</p>
 benchmarklarda (enerji, ters_yarıçap, etkin_potansiyel, yukawa) bu jüri uygulanamaz — spec yoksa filtre
 “uygulanamaz” döner, sessizce geçmez.</p>
 
+<h2>2c. Sıralı ilerleme ve sınırsız arama (yeni)</h2>
+<p><b>Rastgele tohum yok.</b> Her koşu, depodaki rekor zincirini (<code>data/lineage.json</code>)
+devralır: rekor ağacı bir sonraki koşunun başlangıç bireyi olur. Yeni sonuç rekoru geçemezse
+<b>rekor korunur</b> — ilerleme sıralıdır ve monotoniktir (1 → 2 → 3 … bilgi birikimi).</p>
+<table>
+<tr><th>eskiden eleme nedeni</th><th>şimdi</th></tr>
+<tr><td>maliyet bütçesi aşımı</td><td><b>kaldırıldı</b>: maliyet yalnız tercih terimi (eşit uyumda daha ucuz kazanır)</td></tr>
+<tr><td>düğüm/derinlik tavanı</td><td><b>kaldırıldı</b>: 64 düğüm / 10 seviye yalnız bellek güvenliği</td></tr>
+<tr><td>süre bütçesi (400 µs/1000 nokta)</td><td>runaway koruması (≥ 8 ms/1000 nokta) — hızlı form kesilmez</td></tr>
+<tr><td>nesil sayısı (yapay durma)</td><td><b>doğal son</b>: gürültü tabanına inildi + iyileşme durdu</td></tr>
+</table>
+<h3>Rekor karşılaştırma sırası (dürüst-MDL)</h3>
+<p><code>(1) jüriden geçen → (2) en az ihlal → (3) gürültü tabanına göre etkin hata max(train,val) → (4) en ucuz</code></p>
+<p class="small">Gürültü tabanının altındaki hata farkı bilgi taşımaz; bu yüzden taban içinde kalan
+daha ucuz form rekor olur. Aşırı uyum (train ≪ val) bu sıralamada ödüllendirilemez.</p>
+<h3>İndirgeme geçişi (“18-20’de takılma” yok)</h3>
+<p>Her şampiyon, <b>kuantum jürisi bozulmadan</b> küçültülür: alt-ağaçlar sabitle değiştirilir, tüm
+sabitler jüri-farkında yeniden ayarlanır, MDL yuvarlama denenir. Kabul: jüri ✓, ihlal ≤ 1, hata
+gürültü tabanını aşmıyor, maliyet <b>gerçekten düşüyor</b>. Ölçülen örnek: çok elektronlu şampiyon
+11 → 9 işlem birimi. Ayrıca “daha ucuz eşdeğer form” ayrı kayıt olarak yayınlanır.</p>
+<h3>Paralel ve lineer</h3>
+<p>Benchmark’lar <code>--jobs N</code> ile ayrı süreçlerde koşar (bulut: 4 vCPU); tek bağlı çift
+<code>kuvvet_h2 ← bag_h2</code> köprüsüdür (F9 eş-keşif çapraz kontrolü). Atom ölçeği tarafı
+doğrusaldır: ölçülen ns/atom → 10¹² atom projeksiyonu.</p>
+
 <h2>3. Uygunluk fonksiyonu (neden “en ucuz”)</h2>
 <p><code>skor = log₁₀( max(hata, gürültü_tabanı) ) + cₘ · maliyet/bütçe</code></p>
 <p>Gürültü tabanı, referans çözücünün ölçülebilir hassasiyetidir (ör. enerji için 2×10⁻⁴).

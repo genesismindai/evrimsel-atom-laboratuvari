@@ -69,6 +69,8 @@ def summarize_for_static(rec: dict, max_history: int = 60) -> dict:
             "champion": res.get("champion"),
             "hall_of_fame": (res.get("hall_of_fame") or [])[:6],
             "known_limits": res.get("known_limits"),
+            "lineage": res.get("lineage"),
+            "reduced_form": res.get("reduced_form"),
             "history": hist_small,
         }
     return {
@@ -123,6 +125,12 @@ def build(out_dir: str = "docs", verbose: bool = True,
         "null_barriers": _read_json(os.path.join(DATA, "null_barriers.json"), {}),
         "reference_meta": _read_json(os.path.join(DATA, "reference_meta.json"), {}),
         "publish_records": _read_json(os.path.join(DATA, "publish_records.json"), []),
+        # SIRALI İLERLEME: rekor zinciri (her koşu önceki rekorun üstüne koyar)
+        "lineage": (lambda st: {
+            "iteration": st.get("iteration", 0),
+            "records": (__import__("atomic_ea.lineage", fromlist=["x"]).summary(st)),
+            "steps": (st.get("steps") or [])[-60:],
+        })(_read_json(os.path.join(DATA, "lineage.json"), {})),
         "note": ("Statik yayın: veri sayfaya gömülüdür, ağ çağrısı yapılmaz; "
                  "sunucu/oturum kapansa da erişilebilir kalır."),
     }

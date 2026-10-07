@@ -48,8 +48,8 @@ class EAConfig:
     tournament: int = 5
     crossover_rate: float = 0.75
     elite_frac: float = 0.06
-    max_depth: int = 5
-    max_nodes: int = 22
+    max_depth: int = 10                 # kp8: yapay tavan kaldırıldı (güvenlik sınırı)
+    max_nodes: int = 64                 # kp8: yapay tavan kaldırıldı (güvenlik sınırı)
     init_max_depth: int = 3
     cost_weight: float = 0.06
     lm_steps: int = 5
@@ -69,6 +69,10 @@ class EAConfig:
     jury_weight: float = 2.0           # 1. aşama jüri ağırlığı
     jury_steps2: int = 14              # 2. aşama (yalnızca umut vadeden adaylarda)
     jury_weight2: float = 4.0          # 2. aşama jüri ağırlığı
+    resume_trees: tuple = ()           # SIRALI İLERLEME: önceki rekorun ağaçları (devralınan)
+    floor_stop: bool = True            # gürültü tabanına inildi + iyileşme durdu → doğal son
+    stall_stop: int = 8                # taban sonrası sabır (nesil)
+    reduce_champion: bool = True       # şampiyonu jüriyi bozmadan indirge (daha ucuz form)
 
 
 # ------------------------------------------------------------------ başlangıç ağaçları
@@ -650,6 +654,95 @@ def jury_fit_blocks(t: ex.Tree, bench, steps: int = 3, lam: float = 1e-3,
     return best
 
 
+
+
+# --------------------------------------------------- İNDİRGEME (daha ucuz form)
+def _rank_key(rec: dict, noise_floor: float = 0.0) -> tuple:
+    """
+    Yayın sıralaması (küçük olan iyi). Dürüst-MDL mantığı:
+      (1) kuantum jürisinden geçen, (2) en az ihlal, (3) gürültü tabanına göre
+      ETKİN hata max(train, val) — tabanın altındaki fark bilgi taşımaz,
+      (4) en ucuz. Böylece "18-20'de takılı" formlar, veri aynı bilgiyi
+      taşıdığı sürece daha ucuz karşılıklarıyla değiştirilebilir.
+    """
+    eff = max(float(rec.get("loss_val") or 1e9), float(rec.get("loss_train") or 0.0),
+              float(noise_floor or 0.0))
+    return (0 if rec.get("verified") else 1,
+            float(rec.get("violation") or 0.0),
+            math.log10(max(eff, 1e-16)),
+            float(rec.get("cost") or 1e9))
+
+
+def _subtree_paths(t: ex.Tree, path: tuple = ()):
+    yield path, t
+    if isinstance(t, tuple) and len(t) >= 2 and t[0] == "f":
+        for i, a in enumerate(t[2:]):
+            yield from _subtree_paths(a, path + (i,))
+
+
+def _replace_at(t: ex.Tree, path: tuple, new: ex.Tree) -> ex.Tree:
+    if not path:
+        return new
+    i = path[0]
+    if not (isinstance(t, tuple) and t[0] == "f" and i < len(t) - 2):
+        return t
+    args = list(t[2:])
+    args[i] = _replace_at(args[i], path[1:], new)
+    return ("f", t[1]) + tuple(args)
+
+
+def reduce_champion(t: ex.Tree, bench, cfg: EAConfig, max_rounds: int = 3) -> tuple:
+    """
+    Şampiyonu JÜRİYİ BOZMADAN küçültür (kullanıcı: "18 ve 20'de gezmesin,
+    daha düşük de olabilir"). Yöntem: her alt-ağacı bir sabitle değiştirip
+    tüm sabitleri yeniden ayarla (jury-fit); kabul koşulu:
+
+        • kuantum jürisi hâlâ geçer (ihlal ≤ 1),
+        • doğrulama hatası tabanın/şampiyonun belirgin üstüne çıkmaz,
+        • maliyet GERÇEKTEN düşer (düğüm sayısı azalır).
+
+    Sınav (test) kümesi burada da kullanılmaz.
+    """
+    def val_loss(tree: ex.Tree) -> float:
+        return fl.rel_rmse(ex.evaluate(tree, bench.val.X), bench.val.y)
+
+    def violation(tree: ex.Tree) -> float:
+        return fl.quantum_violation([f for f in fl.quantum_gate(tree, bench)
+                                     if f.group == "ELEME"])
+
+    base = t
+    base_loss = val_loss(base)
+    floor = float(getattr(bench, "noise_rel", 1e-12) or 1e-12)
+    guard = max(base_loss * 1.30, floor * 1.5)
+    best, best_loss = base, base_loss
+
+    for _ in range(max_rounds):
+        improved = False
+        # (a) cebirsel sadeleştirme + MDL yuvarlama (jüri denetimiyle)
+        for cand in (simplify(best, bench.probe_X),
+                     snap_constants(best, bench.train.X, bench.train.y,
+                                    float(getattr(bench, "noise_rel", 1e-6)))):
+            if (repr(cand) != repr(best) and ex.cost(cand) < ex.cost(best)
+                    and violation(cand) <= 1.0 and val_loss(cand) <= guard):
+                best, best_loss, improved = cand, val_loss(cand), True
+        # (b) alt-ağaç → sabit (sabitler jüri-farkında yeniden ayarlanır)
+        for path, _sub in list(_subtree_paths(best)):
+            if path == ():
+                continue
+            trial = _replace_at(best, path, ("c", 1.0))
+            if ex.n_consts(trial) > 0 and cfg.jury_refit:
+                trial = jury_fit_blocks(trial, bench, steps=3, jury_weight=2.0)
+            if ex.cost(trial) >= ex.cost(best):
+                continue
+            if violation(trial) <= 1.0 and val_loss(trial) <= guard:
+                best, best_loss, improved = trial, val_loss(trial), True
+                break
+        if not improved:
+            break
+    return best, {"base_cost": ex.cost(base), "reduced_cost": ex.cost(best),
+                  "base_val": base_loss, "reduced_val": best_loss}
+
+
 # ------------------------------------------------------------------ popülasyon
 class Individual:
     __slots__ = ("tree", "ev", "score", "gen")
@@ -666,7 +759,13 @@ def _score_ind(ind: Individual, bench, cfg: EAConfig) -> float:
     if ev is None or not ev.ok:
         return math.inf
     penalty = cfg.cost_weight * (ev.cost / max(bench.cost_budget, 1e-9))
-    return math.log10(max(ev.loss_train, 1e-16)) + float(penalty)
+    # Aşırı uyum koruması: eğitim ve doğrulama hatasının BÜYÜĞÜ.
+    loss = max(ev.loss_train, ev.loss_val)
+    # Dürüst-MDL: hata ÖLÇÜM GÜRÜLTÜ TABANI ile kapılanır. Tabanın altındaki
+    # fark bilgi taşımaz → arama yalnızca DAHA UCUZ formu hedefler ("18-20'de
+    # takılma" biter; maliyet, uyum bozulmadan aşağı iner).
+    floor = float(getattr(bench, "noise_rel", 1e-12) or 1e-12)
+    return math.log10(max(loss, floor)) + float(penalty)
 
 
 def _mk_ind(tree: ex.Tree, bench, cfg: EAConfig, gen: int, do_lm: bool = True) -> Individual:
@@ -730,6 +829,7 @@ def run(bench, cfg: Optional[EAConfig] = None,
         should_stop: Optional[Callable[[], bool]] = None) -> dict:
     cfg = cfg or EAConfig()
     rng = np.random.default_rng(cfg.seed)
+    reduced_form = None
     t_start = time.time()
     nvars = len(bench.var_names)
 
@@ -737,12 +837,21 @@ def run(bench, cfg: Optional[EAConfig] = None,
     if cfg.physics_seeded and not cfg.blind_mode:
         seeds = physics_seeds(bench.var_names, key=bench.key)
 
+    # SIRALI İLERLEME (kp8): önceki koşunun rekoru devralınır → arama kaldığı yerden sürer.
+    resume: List[ex.Tree] = [t for t in (getattr(cfg, "resume_trees", ()) or ()) if t]
+    if resume:
+        seeds = resume + list(seeds)
+
     islands: List[List[Individual]] = []
     for isl in range(cfg.islands):
         pop: List[Individual] = []
         for i in range(cfg.pop_size // cfg.islands):
             if i < len(seeds) and isl == 0:
                 t = seeds[i]
+            elif i == 0 and isl > 0 and resume:
+                # her ada, devralınan rekorun mutasyonlu bir kopyasıyla açılır (çeşitlilik)
+                t = mutate(copy.deepcopy(resume[0]), nvars, cfg, rng,
+                           cheap=(bench.tier == "cheap"), max_depth=cfg.max_depth)
             else:
                 t = random_tree(nvars, cfg, rng)
             pop.append(_mk_ind(t, bench, cfg, 0))
@@ -813,6 +922,14 @@ def run(bench, cfg: Optional[EAConfig] = None,
         history.append(hist)
         if progress and (gen % 2 == 0 or gen == 1):
             progress({"type": "gen", **hist, "elapsed": round(time.time() - t_start, 1)})
+
+        # DOĞAL SON (yapay sınır değil): gürültü tabanına inildi ve iyileşme durdu.
+        if (cfg.floor_stop and np.isfinite(best.score)
+                and best.ev.loss_val <= max(float(getattr(bench, "noise_rel", 0.0) or 0.0), 1e-12)
+                and stall >= cfg.stall_stop):
+            if progress:
+                progress({"type": "log", "msg": "gürültü tabanına inildi, iyileşme durdu — doğal son"})
+            break
 
         if stall >= cfg.patience:
             if progress:
@@ -897,12 +1014,45 @@ def run(bench, cfg: Optional[EAConfig] = None,
     # Sıralama: (1) kuantum jürisinden geçenler, (2) en AZ ihlal, (3) en iyi veri,
     #           (4) en ucuz. Böylece doğrulanmış aday yoksa bile en az ihlal eden
     #           şampiyon olur; "ucuz çöp" asla başa geçemez.
-    hall.sort(key=lambda r: (not r["verified"], r.get("violation", 0.0),
-                             math.log10(max(min(r["loss_val"], r["loss_train"]), 1e-16)),
-                             r["cost"]))
-
-    champ = hall[0] if hall else None
+    _floor = float(getattr(bench, "noise_rel", 0.0) or 0.0)
+    hall.sort(key=lambda r: _rank_key(r, _floor))
     trees_by_formula = {ex.to_pretty(t, bench.var_names): t for t in unique}
+
+    # --- İNDİRGEME GEÇİŞİ: şampiyonu jüriyi bozmadan küçült (daha ucuz form)
+    if hall and cfg.reduce_champion:
+        top = hall[0]
+        t0 = trees_by_formula.get(top["formula"])
+        if t0 is not None:
+            try:
+                t1, info = reduce_champion(t0, bench, cfg)
+                if repr(t1) != repr(t0):
+                    ind1 = _mk_ind(t1, bench, cfg, gen=cfg.generations, do_lm=False)
+                    ev1 = fl.full_eval(ind1.ev, bench, tier=bench.tier,
+                                       time_budget_us=cfg.time_budget_us,
+                                       null_factor=cfg.null_factor)
+                    y1 = ex.evaluate(t1, bench.test.X)
+                    ev1.loss_test = fl.rel_rmse(y1, bench.test.y)
+                    ev1.notes["max_rel_err_test"] = fl.rel_maxerr(y1, bench.test.y)
+                    rec1 = serialize_eval(ev1, bench)
+                    rec1["score_key"] = fl.score(ev1, bench, cfg.cost_weight)
+                    v1 = 0.0
+                    for f in rec1["filters"]:
+                        if f.get("group") == "ELEME" and not f["passed"] and f.get("value") and f.get("limit"):
+                            try:
+                                v1 = max(v1, float(f["value"]) / float(f["limit"]))
+                            except Exception:
+                                pass
+                    rec1["violation"] = v1
+                    rec1["reduced"] = info
+                    rec1["noise_floor"] = _floor
+                    reduced_form = rec1   # şampiyon olamasa da "daha ucuz eşdeğer" raporlanır
+                    if _rank_key(rec1, _floor) < _rank_key(top, _floor):
+                        hall.insert(0, rec1)
+                        trees_by_formula[rec1["formula"]] = t1
+                        hall.sort(key=lambda r: _rank_key(r, _floor))
+            except Exception:
+                pass
+    champ = hall[0] if hall else None
     return {
         "bench_key": bench.key,
         "bench_title": bench.title,
@@ -916,6 +1066,7 @@ def run(bench, cfg: Optional[EAConfig] = None,
         "hall_of_fame": hall,
         "champion": champ,
         "champion_tree": (champ and trees_by_formula.get(champ["formula"])) or None,
+        "reduced_form": reduced_form,
         "null_barrier": bench.null_barrier,
         "seeds_used": [ex.to_pretty(s, bench.var_names) for s in seeds] if seeds else [],
         "physics_seeded": cfg.physics_seeded and not cfg.blind_mode,

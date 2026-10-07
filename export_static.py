@@ -188,14 +188,18 @@ def write_static_publish(out: str, payload: dict) -> None:
     html = f"""<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kalıcılık ve yeniden üretim kaydı</title>
-<style>body{{margin:0;background:#080b10;color:#e6edf3;font:14px/1.6 ui-monospace,Menlo,Consolas,monospace}}
-.wrap{{max-width:1050px;margin:0 auto;padding:26px 22px 70px}}h1{{font-size:20px;color:#7ee787}}
-h2{{font-size:14px;color:#39d0d8;text-transform:uppercase;letter-spacing:.1em;margin-top:26px}}
-code{{background:#131b25;padding:1px 5px;border-radius:4px;color:#ffa657}}
+<style>*{{box-sizing:border-box}}
+body{{margin:0;background:#fff;color:#1f2328;font:14px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}}
+.wrap{{max-width:1050px;margin:0 auto;padding:32px 22px 80px}}
+h1{{font-size:20px;font-weight:600;color:#111418;margin:0 0 6px}}
+h2{{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.14em;margin-top:28px;font-weight:600}}
+code{{background:#f6f7f9;border:1px solid #eceef1;padding:1px 5px;border-radius:4px;color:#111418}}
 table{{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px}}
-td,th{{border:1px solid #1d2836;padding:6px 9px;text-align:left}}th{{background:#131b25;color:#79c0ff}}
-a{{color:#58a6ff}}.ok{{border-left:3px solid #3fb950;padding-left:12px;color:#bfe3c6}}
-li{{color:#c9d1d9}}</style></head><body><div class="wrap">
+td,th{{border:1px solid #e8eaed;padding:7px 10px;text-align:left}}
+th{{background:#fafbfc;color:#6b7280;font-weight:500;text-transform:uppercase;font-size:10.5px;letter-spacing:.08em}}
+a{{color:#111418;text-decoration:underline;text-underline-offset:2px}}a:hover{{color:#000}}
+.ok{{border-left:3px solid #111418;padding-left:12px;color:#374151}}
+li{{color:#374151}}</style></head><body><div class="wrap">
 <h1>Kalıcılık ve yeniden üretim kaydı</h1>
 <div class="ok">Bu site <b>statik</b> olarak yayınlanır: bütün veri <code>index.html</code> içine gömülüdür,
 ağ çağrısı yapmaz. Sunucu ya da geliştirme oturumu kapansa da erişilebilir kalır. Sayfa üretimi:
@@ -204,14 +208,14 @@ ağ çağrısı yapmaz. Sunucu ya da geliştirme oturumu kapansa da erişilebili
 <ul>
 <li>Her koşu: tohum, yapılandırma, referans veri sha256'sı ve tüm formüllerle <code>runs/&lt;id&gt;.json</code> olarak saklanır.</li>
 <li>Raporlar: <code>reports/&lt;id&gt;.md</code> (Markdown) ve <code>reports/&lt;id&gt;.html</code> (bağımsız HTML).</li>
-<li>Yeniden üretme: <code>python3 runner_cli.py --preset hizli --seed &lt;tohum&gt;</code> + <code>python3 export_static.py</code>.</li>
+<li>Yeniden üretme: <code>python3 runner_cli.py --preset hizli --iteration &lt;sıra&gt;</code> + <code>python3 export_static.py</code>.</li>
 <li>Referans veri: sonlu farklar Schrödinger çözücüsü (kapalı form kullanılmaz); doğrulama ölçütleri <code>data/reference_meta.json</code>.</li>
 </ul>
 <h2>Gözlemlenen yayın adresleri (geçici olabilir)</h2>
 <ul>{origins_html}</ul>
 <p>Geçici adresler oturuma bağlıdır; kalıcı olan bu statik arşivdir.</p>
 <h2>Koşu arşivi</h2>
-<table><tr><th>koşu</th><th>ön ayar / tohum</th><th>başlangıç</th><th>bitiş</th><th>süre</th></tr>{rows}</table>
+<table><tr><th>koşu</th><th>ön ayar / sıra</th><th>başlangıç</th><th>bitiş</th><th>süre</th></tr>{rows}</table>
 <p style="margin-top:16px"><a href="index.html">← panele dön</a> · <a href="methods.html">yöntem →</a></p>
 </div></body></html>"""
     with open(os.path.join(out, "publish.html"), "w", encoding="utf-8") as f:
